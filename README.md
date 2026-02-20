@@ -17,7 +17,7 @@ Users submit product ideas and the app generates structured specs (features + ta
 
 - Next.js (App Router) + TypeScript
 - Tailwind CSS
-- Prisma + SQLite
+- Prisma + PostgreSQL (Supabase recommended)
 - NextAuth (OIDC) + Prisma Adapter
 - OpenAI API (optional; fallback generation if key is missing)
 
@@ -50,7 +50,7 @@ Copy `.env.example` to `.env`.
 
 Required baseline:
 
-- `DATABASE_URL` (local default: `file:./dev.db`)
+- `DATABASE_URL` (set to Supabase Postgres URL)
 - `AUTH_SECRET` (required for auth sessions)
 - `AUTH_URL` (required in proxied hosting; for HF use your `.hf.space` domain)
 
@@ -63,18 +63,21 @@ OIDC provider (currently enabled):
 
 - `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
 
-## Prevent data loss on Hugging Face Spaces
+## Supabase setup
 
-SQLite in the container filesystem is ephemeral. To persist posts across deploys:
+1. Create a Supabase project.
+2. In Supabase -> Settings -> Database, copy the connection string (URI).
+3. In HF Space secrets, set:
+   - `DATABASE_URL` to Supabase Postgres URI
+   - keep `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
+4. Redeploy/restart Space.
 
-1. In Space Settings, enable **Persistent storage**.
-2. Ensure `DATABASE_URL` points to `/data`:
-   - `DATABASE_URL=file:/data/dev.db`
-
-This repo's Docker image already defaults to `file:/data/dev.db`.
+The app runs `prisma db push` on startup, so schema is applied to your Supabase DB automatically.
 
 ## Deploy to Hugging Face Spaces (Docker)
 
-This repo includes a `Dockerfile` for Spaces. The container runs `prisma db push` at startup and uses `/data` for SQLite so data survives redeploys when Persistent Storage is enabled.
+This repo includes a `Dockerfile` for Spaces. `DATABASE_URL` is required at runtime; if missing, container startup fails fast with a clear error.
 
-For OIDC in Spaces, set `AUTH_URL` to your direct Space domain (for this app: `https://jacksuyu-demandsolution-codex.hf.space`), configure Google callback URL, and set secrets in Space Settings -> Variables and secrets.
+For OIDC in Spaces, set `AUTH_URL` to your direct Space domain (for this app: `https://jacksuyu-demandsolution-codex.hf.space`) and configure Google callback URL:
+
+- `https://jacksuyu-demandsolution-codex.hf.space/api/auth/callback/google`
