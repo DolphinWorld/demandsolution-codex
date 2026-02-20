@@ -56,4 +56,4 @@ This repo includes a `Dockerfile` for Spaces. After creating a Docker Space, set
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL` (optional)
 
-The container initializes the SQLite schema at startup using `prisma db push`.
+The container initializes the SQLite schema at startup using `prisma db push` and sets a default `DATABASE_URL` internally (`file:./dev.db`) so Space runtime boots without external DB config.
