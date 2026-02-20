@@ -23,7 +23,7 @@ Users submit product ideas and the app generates structured specs (features + ta
 
 ## Features
 
-- OIDC login support (Google, GitHub, Apple, optional Facebook)
+- OIDC login support (Google) for now
 - Anonymous posting by default; logged-in submitters can show visible name
 - Developer profiles (display name, headline, bio, links)
 - Idea/task work votes: developers signal they are working on specific scope
@@ -58,12 +58,9 @@ Optional LLM:
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL` (default: `gpt-4.1-mini`)
 
-OIDC providers (set whichever you want to enable):
+OIDC provider (currently enabled):
 
 - `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
-- `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`
-- `AUTH_APPLE_ID`, `AUTH_APPLE_SECRET`
-- `AUTH_FACEBOOK_ID`, `AUTH_FACEBOOK_SECRET` (optional)
 
 ## Deploy to Hugging Face Spaces (Docker)
 
