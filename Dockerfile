@@ -11,7 +11,9 @@ RUN npm ci
 
 COPY . .
 
-ENV DATABASE_URL="file:./dev.db"
+# Use /data for SQLite in Spaces (persistent when HF Persistent Storage is enabled).
+RUN mkdir -p /data
+ENV DATABASE_URL="file:/data/dev.db"
 ENV OPENAI_API_KEY=""
 ENV OPENAI_MODEL="gpt-4.1-mini"
 ENV AUTH_SECRET="change-me-in-production"
@@ -27,4 +29,4 @@ RUN npm run prisma:generate && npm run build
 
 EXPOSE 7860
 
-CMD ["sh", "-lc", "npx prisma db push --skip-generate && npm start -- -H 0.0.0.0 -p ${PORT}"]
+CMD ["sh", "-lc", "mkdir -p /data && npx prisma db push --skip-generate && npm start -- -H 0.0.0.0 -p ${PORT}"]
