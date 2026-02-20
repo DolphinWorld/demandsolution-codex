@@ -17,7 +17,8 @@ ENV OPENAI_MODEL="gpt-4.1-mini"
 ENV AUTH_SECRET="change-me-in-production"
 ENV AUTH_GOOGLE_ID=""
 ENV AUTH_GOOGLE_SECRET=""
-ENV AUTH_URL=""
+ENV AUTH_URL="https://jacksuyu-demandsolution-codex.hf.space"
+ENV NEXTAUTH_URL="https://jacksuyu-demandsolution-codex.hf.space"
 ENV AUTH_TRUST_HOST="true"
 ENV NODE_ENV=production
 ENV PORT=7860
@@ -26,4 +27,4 @@ RUN npm run prisma:generate && npm run build
 
 EXPOSE 7860
 
-CMD ["sh", "-lc", "if [ -z \"$AUTH_URL\" ] && [ -n \"$SPACE_HOST\" ]; then export AUTH_URL=\"https://$SPACE_HOST\"; fi; npx prisma db push --skip-generate && npm start -- -H 0.0.0.0 -p ${PORT}"]
+CMD ["sh", "-lc", "npx prisma db push --skip-generate && npm start -- -H 0.0.0.0 -p ${PORT}"]
