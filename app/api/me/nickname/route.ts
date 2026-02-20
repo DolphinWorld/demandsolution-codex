@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   const res = NextResponse.json({ ok: true, nickname });
   res.cookies.set("nickname", nickname, {
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 24 * 365,

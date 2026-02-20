@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { fetchWithAnon } from "@/lib/client-anon";
 
 function parseErrorMessage(error: unknown): string {
   if (typeof error === "string") return error;
@@ -31,7 +32,7 @@ export function SubmitForm() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/ideas", {
+      const response = await fetchWithAnon("/api/ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

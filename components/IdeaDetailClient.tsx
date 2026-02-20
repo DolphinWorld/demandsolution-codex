@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { fetchWithAnon } from "@/lib/client-anon";
 
 type LinkItem = {
   id: string;
@@ -101,7 +102,7 @@ export function IdeaDetailClient({
     setIdea((prev) => ({ ...prev, upvotesCount: prev.upvotesCount + (next ? 1 : -1) }));
 
     const method = next ? "POST" : "DELETE";
-    const response = await fetch(`/api/ideas/${idea.id}/upvote`, { method });
+    const response = await fetchWithAnon(`/api/ideas/${idea.id}/upvote`, { method });
     if (!response.ok) {
       setVoted(!next);
       setIdea((prev) => ({ ...prev, upvotesCount: prev.upvotesCount + (next ? -1 : 1) }));
@@ -109,7 +110,7 @@ export function IdeaDetailClient({
   }
 
   async function saveNickname() {
-    const response = await fetch("/api/me/nickname", {
+    const response = await fetchWithAnon("/api/me/nickname", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nickname: nickInput }),
@@ -130,7 +131,7 @@ export function IdeaDetailClient({
     const body = commentInput.trim();
     if (!body) return;
 
-    const response = await fetch(`/api/ideas/${idea.id}/comments`, {
+    const response = await fetchWithAnon(`/api/ideas/${idea.id}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body }),
@@ -148,7 +149,7 @@ export function IdeaDetailClient({
   }
 
   async function claim(taskId: string) {
-    const response = await fetch(`/api/tasks/${taskId}/claim`, { method: "POST" });
+    const response = await fetchWithAnon(`/api/tasks/${taskId}/claim`, { method: "POST" });
     if (!response.ok) return;
 
     const data = await response.json();
@@ -156,7 +157,7 @@ export function IdeaDetailClient({
   }
 
   async function unclaim(taskId: string) {
-    const response = await fetch(`/api/tasks/${taskId}/unclaim`, { method: "POST" });
+    const response = await fetchWithAnon(`/api/tasks/${taskId}/unclaim`, { method: "POST" });
     if (!response.ok) return;
 
     const data = await response.json();
@@ -164,7 +165,7 @@ export function IdeaDetailClient({
   }
 
   async function setStatus(taskId: string, status: TaskItem["status"]) {
-    const response = await fetch(`/api/tasks/${taskId}/status`, {
+    const response = await fetchWithAnon(`/api/tasks/${taskId}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -180,7 +181,7 @@ export function IdeaDetailClient({
     if (!url) return;
     const label = window.prompt("Label (optional)") || undefined;
 
-    const response = await fetch(`/api/tasks/${taskId}/links`, {
+    const response = await fetchWithAnon(`/api/tasks/${taskId}/links`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, label }),
@@ -196,7 +197,7 @@ export function IdeaDetailClient({
   }
 
   async function removeLink(taskId: string, linkId: string) {
-    const response = await fetch(`/api/task-links/${linkId}`, { method: "DELETE" });
+    const response = await fetchWithAnon(`/api/task-links/${linkId}`, { method: "DELETE" });
     if (!response.ok) return;
 
     setIdea((prev) => ({

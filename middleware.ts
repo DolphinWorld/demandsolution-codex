@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   if (!anon) {
     response.cookies.set("anon_id", crypto.randomUUID(), {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
