@@ -52,6 +52,7 @@ Required baseline:
 
 - `DATABASE_URL` (default: `file:./dev.db`)
 - `AUTH_SECRET` (required for auth sessions)
+- `AUTH_URL` (required in proxied hosting; for HF use your `.hf.space` domain)
 
 Optional LLM:
 
@@ -66,4 +67,4 @@ OIDC provider (currently enabled):
 
 This repo includes a `Dockerfile` for Spaces. The container initializes the SQLite schema at startup using `prisma db push` and sets a default `DATABASE_URL` internally (`file:./dev.db`).
 
-For OIDC in Spaces, configure provider callback URLs to your Space domain and set provider secrets in Space Settings -> Variables and secrets.
+For OIDC in Spaces, set `AUTH_URL` to your direct Space domain (for this app: `https://jacksuyu-demandsolution-codex.hf.space`), configure Google callback URL, and set secrets in Space Settings -> Variables and secrets.
