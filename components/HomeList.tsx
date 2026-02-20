@@ -11,6 +11,7 @@ type IdeaCard = {
   upvotesCount: number;
   comment_count: number;
   createdAt: string;
+  submitter_label?: string;
 };
 
 export function HomeList() {
@@ -84,6 +85,7 @@ export function HomeList() {
             </div>
 
             <p className="subtle mt-2 text-sm">{idea.problemStatement}</p>
+            <p className="subtle mt-2 text-xs">Submitter: {idea.submitter_label || "Anonymous"}</p>
 
             {idea.tags.length ? (
               <div className="mt-4 flex flex-wrap gap-1.5">

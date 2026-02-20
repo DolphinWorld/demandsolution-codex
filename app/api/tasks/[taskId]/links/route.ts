@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { getAnonId } from "@/lib/identity";
 
 const schema = z.object({
@@ -9,10 +10,12 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
   const anonId = await getAnonId();
   const { taskId } = await params;
 
-  if (!anonId) return NextResponse.json({ error: "Missing anon identity" }, { status: 400 });
+  if (!userId && !anonId) return NextResponse.json({ error: "Missing identity" }, { status: 400 });
 
   const json = await request.json();
   const parsed = schema.safeParse(json);
@@ -24,7 +27,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
-  if (task.claimedByAnonId !== anonId) {
+  const allowed = userId ? task.claimedByUserId === userId : !task.claimedByUserId && task.claimedByAnonId === anonId;
+  if (!allowed) {
     return NextResponse.json({ error: "Only claimant can add links" }, { status: 403 });
   }
 
@@ -33,7 +37,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       taskId,
       url: parsed.data.url,
       label: parsed.data.label,
-      createdByAnonId: anonId,
+      createdByUserId: userId,
+      createdByAnonId: userId ? null : anonId,
     },
   });
 

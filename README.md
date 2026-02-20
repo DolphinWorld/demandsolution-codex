@@ -7,28 +7,31 @@ sdk: docker
 app_port: 7860
 ---
 
-# Demand Solution Board (V0.1)
+# Demand Solution Board
 
 Community Demand -> Requirements Board.
 
-Users submit vague product ideas. The app generates a structured specification (problem statement, features, implementation tasks, open questions), and the community can upvote, comment, and claim tasks with links to repos/PRs.
+Users submit product ideas and the app generates structured specs (features + tasks). Community members validate demand, developers coordinate implementation, and submitters approve solutions.
 
 ## Stack
 
 - Next.js (App Router) + TypeScript
 - Tailwind CSS
 - Prisma + SQLite
-- OpenAI API (optional; app has fallback generation if key is missing)
+- NextAuth (OIDC) + Prisma Adapter
+- OpenAI API (optional; fallback generation if key is missing)
 
-## Core Features
+## Features
 
-- Cookie-based anonymous identity (`anon_id` UUID, no login)
-- Idea submission + LLM spec generation
-- Home feed with Hot/New sorting
-- Upvotes and comments
-- Task claim/unclaim, status updates, and implementation links
-- Nickname by anonymous identity
-- Basic rate limiting for idea submission (per anon ID + IP)
+- OIDC login support (Google, GitHub, Apple, optional Facebook)
+- Anonymous posting by default; logged-in submitters can show visible name
+- Developer profiles (display name, headline, bio, links)
+- Idea/task work votes: developers signal they are working on specific scope
+- Task claim/unclaim, status updates, implementation links
+- Solution submissions (app URL / GitHub repo / other)
+- Idea submitter can approve a solution
+- Solution like/unlike voting and threaded solution comments
+- Cookie-based anonymous identity still supported for non-auth usage
 
 ## Run Locally
 
@@ -45,15 +48,25 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Copy `.env.example` to `.env`.
 
+Required baseline:
+
 - `DATABASE_URL` (default: `file:./dev.db`)
-- `OPENAI_API_KEY` (optional)
-- `OPENAI_MODEL` (optional, default `gpt-4.1-mini`)
+- `AUTH_SECRET` (required for auth sessions)
+
+Optional LLM:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL` (default: `gpt-4.1-mini`)
+
+OIDC providers (set whichever you want to enable):
+
+- `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
+- `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`
+- `AUTH_APPLE_ID`, `AUTH_APPLE_SECRET`
+- `AUTH_FACEBOOK_ID`, `AUTH_FACEBOOK_SECRET` (optional)
 
 ## Deploy to Hugging Face Spaces (Docker)
 
-This repo includes a `Dockerfile` for Spaces. After creating a Docker Space, set optional secrets:
+This repo includes a `Dockerfile` for Spaces. The container initializes the SQLite schema at startup using `prisma db push` and sets a default `DATABASE_URL` internally (`file:./dev.db`).
 
-- `OPENAI_API_KEY`
-- `OPENAI_MODEL` (optional)
-
-The container initializes the SQLite schema at startup using `prisma db push` and sets a default `DATABASE_URL` internally (`file:./dev.db`) so Space runtime boots without external DB config.
+For OIDC in Spaces, configure provider callback URLs to your Space domain and set provider secrets in Space Settings -> Variables and secrets.

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { fetchWithAnon } from "@/lib/client-anon";
@@ -15,12 +16,13 @@ function parseErrorMessage(error: unknown): string {
   return "Failed to generate requirements.";
 }
 
-export function SubmitForm() {
+export function SubmitForm({ canShowIdentity }: { canShowIdentity: boolean }) {
   const router = useRouter();
   const [rawText, setRawText] = useState("");
   const [targetUsers, setTargetUsers] = useState("");
   const [platform, setPlatform] = useState("Any");
   const [constraints, setConstraints] = useState("");
+  const [showName, setShowName] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,6 +42,7 @@ export function SubmitForm() {
           target_users: targetUsers || undefined,
           platform: platform === "Any" ? undefined : platform,
           constraints: constraints || undefined,
+          show_name: showName,
         }),
       });
 
@@ -107,6 +110,25 @@ export function SubmitForm() {
             placeholder="No login, privacy-first, low budget, integrate with GitHub only..."
             maxLength={500}
           />
+        </div>
+
+        <div className="md:col-span-2 rounded-xl border border-zinc-200 bg-white/70 p-3">
+          <label className="inline-flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={showName}
+              onChange={(e) => setShowName(e.target.checked)}
+              disabled={!canShowIdentity}
+            />
+            Show my name publicly as idea submitter
+          </label>
+          {!canShowIdentity ? (
+            <p className="subtle mt-2 text-xs">
+              Login is required to publish with your visible name. <Link href="/login" className="underline">Sign in</Link>
+            </p>
+          ) : (
+            <p className="subtle mt-2 text-xs">Default remains anonymous even when logged in.</p>
+          )}
         </div>
       </div>
 

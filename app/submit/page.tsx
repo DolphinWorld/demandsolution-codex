@@ -1,6 +1,9 @@
+import { auth } from "@/auth";
 import { SubmitForm } from "@/components/SubmitForm";
 
-export default function SubmitPage() {
+export default async function SubmitPage() {
+  const session = await auth();
+
   return (
     <div className="space-y-5 md:space-y-6">
       <section className="hero-panel reveal-up">
@@ -11,7 +14,7 @@ export default function SubmitPage() {
           tasks, and open questions.
         </p>
       </section>
-      <SubmitForm />
+      <SubmitForm canShowIdentity={Boolean(session?.user?.id)} />
     </div>
   );
 }

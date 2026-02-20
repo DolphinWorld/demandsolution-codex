@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { fetchWithAnon } from "@/lib/client-anon";
 
@@ -7,7 +8,8 @@ type LinkItem = {
   id: string;
   url: string;
   label: string | null;
-  createdByAnonId: string;
+  createdByAnonId: string | null;
+  createdByUserId: string | null;
 };
 
 type TaskItem = {
@@ -18,14 +20,36 @@ type TaskItem = {
   effort: string | null;
   status: "OPEN" | "IN_PROGRESS" | "DONE";
   claimedByAnonId: string | null;
+  claimedByUserId: string | null;
   claimantNickname: string | null;
+  claimantDisplayName: string | null;
   links: LinkItem[];
+  working_count: number;
+  working: boolean;
 };
 
 type CommentItem = {
   id: string;
   body: string;
   createdAt: string;
+  author_label?: string;
+};
+
+type SolutionItem = {
+  id: string;
+  ideaId: string;
+  taskId: string | null;
+  taskTitle: string | null;
+  url: string;
+  label: string | null;
+  description: string | null;
+  type: "APP_URL" | "GITHUB_REPO" | "OTHER";
+  createdAt: string;
+  approvedAt: string | null;
+  createdByDisplayName: string;
+  voteScore: number;
+  myVote: number;
+  commentsCount: number;
 };
 
 type IdeaPayload = {
@@ -37,17 +61,33 @@ type IdeaPayload = {
   open_questions: string[];
   upvotesCount: number;
   commentsCount: number;
+  submitter_label: string;
   viewerAnonId: string;
+  viewerUserId: string | null;
+  isAuthenticated: boolean;
+  canApproveSolutions: boolean;
+  idea_working_count: number;
+  idea_working: boolean;
   tasks: TaskItem[];
   comments: CommentItem[];
+  solutions: SolutionItem[];
 };
 
 type TaskUpdate = {
   id: string;
   status: "OPEN" | "IN_PROGRESS" | "DONE";
   claimedByAnonId: string | null;
+  claimedByUserId: string | null;
   claimantNickname?: string | null;
+  claimantDisplayName?: string | null;
   links?: LinkItem[];
+};
+
+type SolutionCommentItem = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author_label?: string;
 };
 
 function formatStatus(status: TaskItem["status"]): string {
@@ -71,25 +111,36 @@ export function IdeaDetailClient({
   const [nickInput, setNickInput] = useState(initialNickname);
   const [commentInput, setCommentInput] = useState("");
 
+  const [solutions, setSolutions] = useState<SolutionItem[]>(initialIdea.solutions || []);
+  const [solutionUrl, setSolutionUrl] = useState("");
+  const [solutionLabel, setSolutionLabel] = useState("");
+  const [solutionDescription, setSolutionDescription] = useState("");
+  const [solutionType, setSolutionType] = useState<"APP_URL" | "GITHUB_REPO" | "OTHER">("APP_URL");
+  const [solutionTaskId, setSolutionTaskId] = useState<string>("");
+
+  const [solutionComments, setSolutionComments] = useState<Record<string, SolutionCommentItem[]>>({});
+  const [solutionCommentInput, setSolutionCommentInput] = useState<Record<string, string>>({});
+
   function applyTaskUpdate(taskId: string, taskUpdate: TaskUpdate) {
     setIdea((prev) => ({
       ...prev,
       tasks: prev.tasks.map((task) => {
         if (task.id !== taskId) return task;
 
-        const nextClaimedBy = taskUpdate.claimedByAnonId;
-        const nextClaimantNickname =
-          taskUpdate.claimantNickname !== undefined
-            ? taskUpdate.claimantNickname
-            : nextClaimedBy === prev.viewerAnonId
-              ? nickname || "anon"
-              : task.claimantNickname;
+        const nextClaimedByUser = taskUpdate.claimedByUserId;
+        const nextClaimedByAnon = taskUpdate.claimedByAnonId;
+        const nextClaimantDisplayName =
+          taskUpdate.claimantDisplayName ??
+          taskUpdate.claimantNickname ??
+          (nextClaimedByAnon === prev.viewerAnonId ? nickname || "anon" : task.claimantDisplayName);
 
         return {
           ...task,
           status: taskUpdate.status,
-          claimedByAnonId: nextClaimedBy,
-          claimantNickname: nextClaimedBy ? nextClaimantNickname ?? "anon" : null,
+          claimedByUserId: nextClaimedByUser,
+          claimedByAnonId: nextClaimedByAnon,
+          claimantNickname: nextClaimantDisplayName,
+          claimantDisplayName: nextClaimantDisplayName,
           links: taskUpdate.links ?? task.links,
         };
       }),
@@ -109,6 +160,43 @@ export function IdeaDetailClient({
     }
   }
 
+  async function toggleIdeaWorking() {
+    if (!idea.isAuthenticated) return;
+
+    const next = !idea.idea_working;
+    const method = next ? "POST" : "DELETE";
+    const response = await fetchWithAnon(`/api/ideas/${idea.id}/work-vote`, { method });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    setIdea((prev) => ({
+      ...prev,
+      idea_working: data.working,
+      idea_working_count: data.working_count,
+    }));
+  }
+
+  async function toggleTaskWorking(taskId: string, working: boolean) {
+    if (!idea.isAuthenticated) return;
+
+    const response = await fetchWithAnon(`/api/tasks/${taskId}/work-vote`, { method: working ? "DELETE" : "POST" });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    setIdea((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              working: data.working,
+              working_count: data.working_count,
+            }
+          : task
+      ),
+    }));
+  }
+
   async function saveNickname() {
     const response = await fetchWithAnon("/api/me/nickname", {
       method: "POST",
@@ -121,7 +209,7 @@ export function IdeaDetailClient({
       setIdea((prev) => ({
         ...prev,
         tasks: prev.tasks.map((task) =>
-          task.claimedByAnonId === prev.viewerAnonId ? { ...task, claimantNickname: nickInput || "anon" } : task
+          task.claimedByAnonId === prev.viewerAnonId ? { ...task, claimantNickname: nickInput || "anon", claimantDisplayName: nickInput || "anon" } : task
         ),
       }));
     }
@@ -213,6 +301,95 @@ export function IdeaDetailClient({
     }));
   }
 
+  async function submitSolution() {
+    if (!idea.isAuthenticated) return;
+    if (!solutionUrl.trim()) return;
+
+    const response = await fetchWithAnon(`/api/ideas/${idea.id}/solutions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        taskId: solutionTaskId || undefined,
+        url: solutionUrl.trim(),
+        label: solutionLabel.trim() || undefined,
+        description: solutionDescription.trim() || undefined,
+        type: solutionType,
+      }),
+    });
+
+    if (!response.ok) return;
+    const data = await response.json();
+    setSolutions(data.items || []);
+    setSolutionUrl("");
+    setSolutionLabel("");
+    setSolutionDescription("");
+    setSolutionTaskId("");
+    setSolutionType("APP_URL");
+  }
+
+  async function setSolutionVote(solutionId: string, value: number) {
+    const current = solutions.find((solution) => solution.id === solutionId)?.myVote || 0;
+    const response =
+      current === value
+        ? await fetchWithAnon(`/api/solutions/${solutionId}/vote`, { method: "DELETE" })
+        : await fetchWithAnon(`/api/solutions/${solutionId}/vote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value }),
+          });
+
+    if (!response.ok) return;
+    const data = await response.json();
+
+    setSolutions((prev) =>
+      prev.map((solution) =>
+        solution.id === solutionId
+          ? {
+              ...solution,
+              voteScore: data.score,
+              myVote: data.myVote,
+            }
+          : solution
+      )
+    );
+  }
+
+  async function approveSolution(solutionId: string) {
+    const response = await fetchWithAnon(`/api/solutions/${solutionId}/approve`, { method: "POST" });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const approvedAt = data.solution?.approvedAt || new Date().toISOString();
+    setSolutions((prev) => prev.map((solution) => (solution.id === solutionId ? { ...solution, approvedAt } : solution)));
+  }
+
+  async function loadSolutionComments(solutionId: string) {
+    const response = await fetchWithAnon(`/api/solutions/${solutionId}/comments`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    setSolutionComments((prev) => ({ ...prev, [solutionId]: data.items || [] }));
+  }
+
+  async function addSolutionComment(solutionId: string) {
+    const body = (solutionCommentInput[solutionId] || "").trim();
+    if (!body) return;
+
+    const response = await fetchWithAnon(`/api/solutions/${solutionId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    setSolutionComments((prev) => ({ ...prev, [solutionId]: data.items || [] }));
+    setSolutionCommentInput((prev) => ({ ...prev, [solutionId]: "" }));
+    setSolutions((prev) =>
+      prev.map((solution) => (solution.id === solutionId ? { ...solution, commentsCount: (data.items || []).length } : solution))
+    );
+  }
+
   const grouped = useMemo(() => {
     return {
       open: idea.tasks.filter((task) => task.status === "OPEN"),
@@ -234,15 +411,25 @@ export function IdeaDetailClient({
               {tag}
             </span>
           ))}
+          <span className="pill">Submitter: {idea.submitter_label}</span>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2 md:gap-3">
           <button className={`btn ${voted ? "btn-primary" : ""}`} onClick={toggleVote}>
             {voted ? "Upvoted" : "Upvote"} ({idea.upvotesCount})
           </button>
+          <button className={`btn ${idea.idea_working ? "btn-primary" : ""}`} onClick={toggleIdeaWorking} disabled={!idea.isAuthenticated}>
+            Working on this ({idea.idea_working_count})
+          </button>
           <span className="pill">{idea.commentsCount} comments</span>
           <span className="pill">{idea.tasks.length} tasks</span>
         </div>
+
+        {!idea.isAuthenticated ? (
+          <p className="subtle mt-2 text-xs">
+            <Link href="/login" className="underline">Sign in</Link> to submit solutions and add developer work votes.
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 reveal-up" style={{ animationDelay: "80ms" }}>
@@ -266,8 +453,8 @@ export function IdeaDetailClient({
       <section className="card reveal-up space-y-4" style={{ animationDelay: "140ms" }}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="section-title">Developer Identity</h2>
-            <p className="subtle mt-1 text-sm">Set a nickname shown when you claim tasks.</p>
+            <h2 className="section-title">Anonymous Nickname</h2>
+            <p className="subtle mt-1 text-sm">Used for anonymous comments and legacy task claims.</p>
           </div>
           <span className="pill">Current: {nickname || "anon"}</span>
         </div>
@@ -287,7 +474,7 @@ export function IdeaDetailClient({
         <div className="flex items-end justify-between gap-2">
           <div>
             <h2 className="section-title">Tasks</h2>
-            <p className="subtle mt-1 text-sm">Claim tasks, attach implementation links, and move status to done.</p>
+            <p className="subtle mt-1 text-sm">Claim tasks, attach implementation links, and vote to signal developer interest.</p>
           </div>
         </div>
 
@@ -295,32 +482,151 @@ export function IdeaDetailClient({
           title="Open"
           items={grouped.open}
           viewerAnonId={idea.viewerAnonId}
+          viewerUserId={idea.viewerUserId}
+          isAuthenticated={idea.isAuthenticated}
           onClaim={claim}
           onUnclaim={unclaim}
           onSetStatus={setStatus}
           onAddLink={addLink}
           onRemoveLink={removeLink}
+          onToggleWorking={toggleTaskWorking}
         />
         <TaskColumn
           title="In Progress"
           items={grouped.inProgress}
           viewerAnonId={idea.viewerAnonId}
+          viewerUserId={idea.viewerUserId}
+          isAuthenticated={idea.isAuthenticated}
           onClaim={claim}
           onUnclaim={unclaim}
           onSetStatus={setStatus}
           onAddLink={addLink}
           onRemoveLink={removeLink}
+          onToggleWorking={toggleTaskWorking}
         />
         <TaskColumn
           title="Done"
           items={grouped.done}
           viewerAnonId={idea.viewerAnonId}
+          viewerUserId={idea.viewerUserId}
+          isAuthenticated={idea.isAuthenticated}
           onClaim={claim}
           onUnclaim={unclaim}
           onSetStatus={setStatus}
           onAddLink={addLink}
           onRemoveLink={removeLink}
+          onToggleWorking={toggleTaskWorking}
         />
+      </section>
+
+      <section className="card reveal-up space-y-4" style={{ animationDelay: "200ms" }}>
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <h2 className="section-title">Solutions</h2>
+            <p className="subtle mt-1 text-sm">Developers can submit app/repo URLs and the idea submitter can approve.</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-zinc-200 bg-white/70 p-3">
+          <div className="grid gap-2 md:grid-cols-2">
+            <input className="input" value={solutionUrl} onChange={(e) => setSolutionUrl(e.target.value)} placeholder="Solution URL (app or repo)" />
+            <input className="input" value={solutionLabel} onChange={(e) => setSolutionLabel(e.target.value)} placeholder="Label (optional)" />
+            <select className="input" value={solutionType} onChange={(e) => setSolutionType(e.target.value as "APP_URL" | "GITHUB_REPO" | "OTHER")}>
+              <option value="APP_URL">App URL</option>
+              <option value="GITHUB_REPO">GitHub repo</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <select className="input" value={solutionTaskId} onChange={(e) => setSolutionTaskId(e.target.value)}>
+              <option value="">For whole idea</option>
+              {idea.tasks.map((task) => (
+                <option key={task.id} value={task.id}>{task.title}</option>
+              ))}
+            </select>
+            <textarea
+              className="input md:col-span-2 min-h-20"
+              value={solutionDescription}
+              onChange={(e) => setSolutionDescription(e.target.value)}
+              placeholder="How this solution addresses the demand"
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <button className="btn btn-primary" onClick={submitSolution} disabled={!idea.isAuthenticated}>
+              Submit Solution
+            </button>
+            {!idea.isAuthenticated ? <span className="subtle text-xs">Login required for solution submission.</span> : null}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {solutions.length === 0 ? <p className="subtle text-sm">No solutions submitted yet.</p> : null}
+          {solutions.map((solution) => (
+            <details key={solution.id} className="rounded-xl border border-zinc-200 bg-white/65 p-3">
+              <summary className="cursor-pointer">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold">{solution.label || solution.url}</p>
+                    <p className="subtle text-xs">
+                      by {solution.createdByDisplayName}
+                      {solution.taskTitle ? ` • task: ${solution.taskTitle}` : " • idea-level solution"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {solution.approvedAt ? <span className="pill">Approved</span> : null}
+                    <span className="pill">Score {solution.voteScore}</span>
+                    <span className="pill">{solution.commentsCount} comments</span>
+                  </div>
+                </div>
+              </summary>
+
+              <div className="mt-3 space-y-2 text-sm">
+                <a href={solution.url} target="_blank" rel="noreferrer" className="text-cyan-700 underline">{solution.url}</a>
+                {solution.description ? <p>{solution.description}</p> : null}
+                <p className="subtle text-xs">{new Date(solution.createdAt).toLocaleString()}</p>
+
+                <div className="flex flex-wrap gap-2">
+                  <button className={`btn ${solution.myVote === 1 ? "btn-primary" : ""}`} onClick={() => setSolutionVote(solution.id, 1)}>
+                    Like
+                  </button>
+                  <button className={`btn ${solution.myVote === -1 ? "btn-primary" : ""}`} onClick={() => setSolutionVote(solution.id, -1)}>
+                    Unlike
+                  </button>
+                  {idea.canApproveSolutions && !solution.approvedAt ? (
+                    <button className="btn" onClick={() => approveSolution(solution.id)}>
+                      Approve Solution
+                    </button>
+                  ) : null}
+                  <button className="btn" onClick={() => loadSolutionComments(solution.id)}>
+                    Load Comments
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    className="input"
+                    value={solutionCommentInput[solution.id] || ""}
+                    onChange={(e) =>
+                      setSolutionCommentInput((prev) => ({
+                        ...prev,
+                        [solution.id]: e.target.value,
+                      }))
+                    }
+                    placeholder="Comment on this solution"
+                  />
+                  <button className="btn" onClick={() => addSolutionComment(solution.id)}>
+                    Post
+                  </button>
+                </div>
+
+                {(solutionComments[solution.id] || []).map((comment) => (
+                  <div key={comment.id} className="rounded-lg border border-zinc-200 bg-white/90 p-2 text-xs">
+                    <p>{comment.body}</p>
+                    <p className="subtle mt-1">{comment.author_label || "Anon"} • {new Date(comment.createdAt).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ))}
+        </div>
       </section>
 
       <section className="card reveal-up space-y-4" style={{ animationDelay: "240ms" }}>
@@ -346,7 +652,7 @@ export function IdeaDetailClient({
             idea.comments.map((comment) => (
               <div key={comment.id} className="rounded-xl border border-white/70 bg-white/60 p-3 text-sm">
                 <p>{comment.body}</p>
-                <p className="subtle mt-1 text-xs">{new Date(comment.createdAt).toLocaleString()}</p>
+                <p className="subtle mt-1 text-xs">{comment.author_label || "Anon"} • {new Date(comment.createdAt).toLocaleString()}</p>
               </div>
             ))
           ) : (
@@ -368,44 +674,54 @@ function TaskColumn({
   title,
   items,
   viewerAnonId,
+  viewerUserId,
+  isAuthenticated,
   onClaim,
   onUnclaim,
   onSetStatus,
   onAddLink,
   onRemoveLink,
+  onToggleWorking,
 }: {
   title: string;
   items: TaskItem[];
   viewerAnonId: string;
+  viewerUserId: string | null;
+  isAuthenticated: boolean;
   onClaim: (taskId: string) => Promise<void>;
   onUnclaim: (taskId: string) => Promise<void>;
   onSetStatus: (taskId: string, status: TaskItem["status"]) => Promise<void>;
   onAddLink: (taskId: string) => Promise<void>;
   onRemoveLink: (taskId: string, linkId: string) => Promise<void>;
+  onToggleWorking: (taskId: string, working: boolean) => Promise<void>;
 }) {
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-600">{title}</h3>
       {items.length === 0 ? <p className="subtle text-sm">No tasks.</p> : null}
       {items.map((task) => {
-        const isClaimedByMe = task.claimedByAnonId === viewerAnonId;
-        const isClaimedBySomeoneElse = Boolean(task.claimedByAnonId) && !isClaimedByMe;
+        const isClaimedByMe = viewerUserId
+          ? task.claimedByUserId === viewerUserId
+          : !task.claimedByUserId && task.claimedByAnonId === viewerAnonId;
+
+        const isClaimedBySomeoneElse = Boolean(task.claimedByUserId || task.claimedByAnonId) && !isClaimedByMe;
 
         return (
-          <details key={task.id} className="rounded-xl border border-white/70 bg-white/70 p-3">
+          <details key={task.id} className="rounded-xl border border-white/70 bg-white/65 p-3">
             <summary className="cursor-pointer text-sm font-semibold">
               <span>{task.title}</span>
               <span className={`ml-2 inline-flex rounded-full border px-2 py-0.5 text-xs ${statusBadgeClass(task.status)}`}>
                 {formatStatus(task.status)}
               </span>
               {task.effort ? <span className="ml-2 text-xs text-zinc-500">Effort {task.effort}</span> : null}
+              <span className="ml-2 text-xs text-zinc-500">Working votes {task.working_count}</span>
             </summary>
 
             <div className="mt-3 space-y-2 text-sm">
               {task.description ? <p>{task.description}</p> : null}
-              {task.claimedByAnonId ? (
+              {task.claimedByAnonId || task.claimedByUserId ? (
                 <p className="text-xs text-zinc-600">
-                  Claimed by <span className="font-medium">{task.claimantNickname || "anon"}</span>
+                  Claimed by <span className="font-medium">{task.claimantDisplayName || "anon"}</span>
                 </p>
               ) : (
                 <p className="text-xs text-zinc-600">Unclaimed</p>
@@ -420,7 +736,7 @@ function TaskColumn({
               ) : null}
 
               <div className="flex flex-wrap gap-2">
-                {!task.claimedByAnonId ? (
+                {!task.claimedByAnonId && !task.claimedByUserId ? (
                   <button className="btn" onClick={() => onClaim(task.id)}>
                     Claim
                   </button>
@@ -446,12 +762,19 @@ function TaskColumn({
                   </>
                 ) : null}
 
+                <button className={`btn ${task.working ? "btn-primary" : ""}`} onClick={() => onToggleWorking(task.id, task.working)} disabled={!isAuthenticated}>
+                  I am working
+                </button>
+
                 {isClaimedBySomeoneElse ? <span className="subtle text-xs">Only claimant can update this task.</span> : null}
               </div>
 
               <div className="space-y-1.5">
                 {task.links.map((link) => {
-                  const canRemove = isClaimedByMe || link.createdByAnonId === viewerAnonId;
+                  const canRemoveAsUser = Boolean(viewerUserId) && (link.createdByUserId === viewerUserId || task.claimedByUserId === viewerUserId);
+                  const canRemoveAsAnon = !viewerUserId && (link.createdByAnonId === viewerAnonId || task.claimedByAnonId === viewerAnonId);
+                  const canRemove = canRemoveAsUser || canRemoveAsAnon;
+
                   return (
                     <div key={link.id} className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white/90 px-2 py-1">
                       <a href={link.url} target="_blank" rel="noreferrer" className="truncate text-cyan-700 underline">

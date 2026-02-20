@@ -11,8 +11,10 @@
     "prisma:migrate": "prisma migrate dev --name init"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^6.4.1",
     "next": "^15.5.12",
+    "next-auth": "^5.0.0-beta.30",
     "openai": "^4.80.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

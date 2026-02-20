@@ -7,82 +7,281 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  developerProfile DeveloperProfile?
+
+  ideas            Idea[]            @relation("IdeaCreatorUser")
+  taskClaims       Task[]            @relation("TaskClaimUser")
+  taskLinks        TaskLink[]        @relation("TaskLinkCreatorUser")
+  comments         Comment[]         @relation("CommentCreatorUser")
+  ideaVotes        IdeaUserVote[]
+  ideaWorkVotes    IdeaWorkVote[]
+  taskWorkVotes    TaskWorkVote[]
+  solutions        Solution[]        @relation("SolutionCreatorUser")
+  approvedSolutions Solution[]       @relation("SolutionApprovedByUser")
+  solutionVotes    SolutionUserVote[]
+  solutionComments SolutionComment[] @relation("SolutionCommentUser")
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @id
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model DeveloperProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  displayName String
+  headline   String?
+  bio        String?
+  githubUrl  String?
+  websiteUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Idea {
-  id                 String    @id @default(uuid())
-  createdAt          DateTime  @default(now())
-  createdByAnonId    String
-  rawInputText       String
-  targetUsers        String?
-  platform           String?
-  constraints        String?
-  title              String
-  problemStatement   String
-  tags               String
-  features           String
-  openQuestions      String
-  upvotesCount       Int       @default(0)
-  commentsCount      Int       @default(0)
-  tasks              Task[]
-  comments           Comment[]
-  votes              Vote[]
+  id               String    @id @default(uuid())
+  createdAt        DateTime  @default(now())
+  createdByAnonId  String?
+  createdByUserId  String?
+  isAnonymous      Boolean   @default(true)
+  submitterVisibleName String?
+  rawInputText     String
+  targetUsers      String?
+  platform         String?
+  constraints      String?
+  title            String
+  problemStatement String
+  tags             String
+  features         String
+  openQuestions    String
+  upvotesCount     Int       @default(0)
+  commentsCount    Int       @default(0)
+
+  createdByUser User? @relation("IdeaCreatorUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  tasks     Task[]
+  comments  Comment[]
+  votes     Vote[]
+  userVotes IdeaUserVote[]
+  workVotes IdeaWorkVote[]
+  solutions Solution[]
 }
 
 model Task {
-  id               String   @id @default(uuid())
-  createdAt        DateTime @default(now())
-  ideaId           String
-  title            String
-  description      String?
-  acceptance       String
-  effort           String?
-  status           String   @default("OPEN")
-  claimedByAnonId  String?
-  claimedAt        DateTime?
-  updatedAt        DateTime @updatedAt
-  idea             Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
-  links            TaskLink[]
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  ideaId          String
+  title           String
+  description     String?
+  acceptance      String
+  effort          String?
+  status          String   @default("OPEN")
+  claimedByAnonId String?
+  claimedByUserId String?
+  claimedAt       DateTime?
+  updatedAt       DateTime @updatedAt
+
+  idea          Idea      @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  claimedByUser User?     @relation("TaskClaimUser", fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  links         TaskLink[]
+  workVotes     TaskWorkVote[]
+  solutions     Solution[]
 }
 
 model TaskLink {
   id              String   @id @default(uuid())
-  taskId           String
-  url              String
-  label            String?
-  createdByAnonId  String
-  createdAt        DateTime @default(now())
-  task             Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId          String
+  url             String
+  label           String?
+  createdByAnonId String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  task          Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdByUser User? @relation("TaskLinkCreatorUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
 }
 
 model Comment {
   id              String   @id @default(uuid())
   ideaId          String
   body            String
-  createdByAnonId String
+  createdByAnonId String?
+  createdByUserId String?
   createdAt       DateTime @default(now())
-  idea            Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  idea          Idea  @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  createdByUser User? @relation("CommentCreatorUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
 }
 
 model Vote {
-  ideaId     String
-  anonId     String
-  createdAt  DateTime @default(now())
-  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId    String
+  anonId    String
+  createdAt DateTime @default(now())
+
+  idea Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
 
   @@id([ideaId, anonId])
 }
 
+model IdeaUserVote {
+  ideaId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  idea Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([ideaId, userId])
+}
+
+model IdeaWorkVote {
+  ideaId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  idea Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([ideaId, userId])
+}
+
+model TaskWorkVote {
+  taskId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+}
+
+enum SolutionType {
+  APP_URL
+  GITHUB_REPO
+  OTHER
+}
+
+model Solution {
+  id                      String       @id @default(uuid())
+  ideaId                  String
+  taskId                  String?
+  createdByUserId         String
+  url                     String
+  label                   String?
+  description             String?
+  type                    SolutionType @default(OTHER)
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  approvedAt              DateTime?
+  approvedBySubmitterAnonId String?
+  approvedBySubmitterUserId String?
+
+  idea          Idea  @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  task          Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdByUser User  @relation("SolutionCreatorUser", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  approvedByUser User? @relation("SolutionApprovedByUser", fields: [approvedBySubmitterUserId], references: [id], onDelete: SetNull)
+
+  userVotes SolutionUserVote[]
+  anonVotes SolutionAnonVote[]
+  comments  SolutionComment[]
+}
+
+model SolutionUserVote {
+  solutionId String
+  userId     String
+  value      Int
+  createdAt  DateTime @default(now())
+
+  solution Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([solutionId, userId])
+}
+
+model SolutionAnonVote {
+  solutionId String
+  anonId     String
+  value      Int
+  createdAt  DateTime @default(now())
+
+  solution Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+
+  @@id([solutionId, anonId])
+}
+
+model SolutionComment {
+  id              String   @id @default(uuid())
+  solutionId      String
+  body            String
+  createdByUserId String?
+  createdByAnonId String?
+  createdAt       DateTime @default(now())
+
+  solution      Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  createdByUser User?    @relation("SolutionCommentUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+}
+
 model Nickname {
-  anonId    String  @id
+  anonId    String   @id
   nickname  String
   updatedAt DateTime @updatedAt
 }
 
 model SubmissionRateLimit {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   anonId      String
   ipAddress   String
   windowStart String
-  count       Int      @default(0)
+  count       Int    @default(0)
 
   @@unique([anonId, ipAddress, windowStart])
 }

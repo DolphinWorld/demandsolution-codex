@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fraunces, Space_Grotesk } from "next/font/google";
+import { auth, signOut } from "@/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ const display = Fraunces({
   variable: "--font-display",
 });
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth();
+
   return (
     <html lang="en">
       <body className={`${sans.variable} ${display.variable}`}>
@@ -28,13 +31,36 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/" className="brand-mark text-lg font-semibold tracking-tight">
               Demand Solution Board
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Link href="/" className="btn">
                 Browse
               </Link>
               <Link href="/submit" className="btn btn-primary">
                 Submit Idea
               </Link>
+
+              {session?.user ? (
+                <>
+                  <Link href="/me/profile" className="btn">
+                    Profile
+                  </Link>
+                  <span className="pill">{session.user.name || session.user.email || "Signed in"}</span>
+                  <form
+                    action={async () => {
+                      "use server";
+                      await signOut({ redirectTo: "/" });
+                    }}
+                  >
+                    <button type="submit" className="btn">
+                      Sign out
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link href="/login" className="btn">
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         </header>
