@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --ink: #1f2a37;
+  --muted: #5b6473;
+  --surface: #fffef9;
+  --surface-strong: #ffffff;
+  --line: #d7dde8;
+  --accent: #0f766e;
+  --accent-2: #ea580c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  @apply antialiased;
+  color: var(--ink);
+  background: linear-gradient(160deg, #f5f2e9 0%, #f4efe4 45%, #f1ece1 100%);
+  font-family: var(--font-sans), sans-serif;
+  line-height: 1.5;
+}
+
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(36rem 30rem at 10% -10%, rgb(14 116 144 / 0.17), transparent 70%),
+    radial-gradient(24rem 22rem at 90% 4%, rgb(234 88 12 / 0.14), transparent 70%),
+    radial-gradient(28rem 24rem at 50% 100%, rgb(15 118 110 / 0.1), transparent 70%);
+}
+
+.container-page {
+  @apply mx-auto w-full max-w-6xl px-4 md:px-6;
+}
+
+.brand-mark {
+  font-family: var(--font-display), serif;
+  letter-spacing: -0.02em;
+}
+
+.card {
+  @apply rounded-2xl border p-5 shadow-sm transition-all md:p-6;
+  border-color: color-mix(in oklab, var(--line) 84%, white);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.74));
+  backdrop-filter: blur(6px);
+}
+
+.card:hover {
+  box-shadow: 0 12px 28px -22px rgb(15 23 42 / 0.4);
+}
+
+.hero-panel {
+  @apply rounded-3xl border p-6 md:p-9;
+  border-color: rgb(255 255 255 / 0.8);
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.92) 0%, rgb(249 248 244 / 0.84) 58%, rgb(246 241 234 / 0.92) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 22px 35px -30px rgb(30 41 59 / 0.45);
+}
+
+.section-title {
+  @apply text-lg font-semibold tracking-tight md:text-xl;
+  font-family: var(--font-display), serif;
+}
+
+.kicker {
+  @apply text-xs font-semibold uppercase tracking-[0.24em];
+  color: var(--muted);
+}
+
+.subtle {
+  color: var(--muted);
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl border px-3.5 py-2 text-sm font-medium transition duration-200;
+  border-color: color-mix(in oklab, var(--line) 86%, white);
+  background: rgb(255 255 255 / 0.86);
+  color: var(--ink);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -18px rgb(15 23 42 / 0.45);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-primary {
+  border-color: color-mix(in oklab, var(--accent) 64%, var(--accent-2));
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in oklab, var(--accent) 65%, var(--accent-2)) 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  filter: saturate(1.05) brightness(0.98);
+}
+
+.input {
+  @apply w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition;
+  border-color: color-mix(in oklab, var(--line) 84%, white);
+  background: rgb(255 255 255 / 0.88);
+}
+
+.input:focus {
+  border-color: color-mix(in oklab, var(--accent) 70%, white);
+  box-shadow: 0 0 0 4px rgb(15 118 110 / 0.12);
+}
+
+textarea.input {
+  resize: vertical;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium;
+  border-color: rgb(14 116 144 / 0.18);
+  background: rgb(14 116 144 / 0.08);
+  color: rgb(14 116 144 / 0.95);
+}
+
+.pill {
+  @apply inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium;
+  border-color: color-mix(in oklab, var(--line) 80%, white);
+  background: rgb(255 255 255 / 0.8);
+  color: var(--muted);
+}
+
+.metric {
+  @apply rounded-xl border px-3 py-2 text-sm;
+  border-color: rgb(255 255 255 / 0.75);
+  background: rgb(255 255 255 / 0.55);
+}
+
+.reveal-up {
+  animation: revealUp 420ms ease-out both;
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .card,
+  .reveal-up {
+    transition: none;
+    animation: none;
+  }
+}
