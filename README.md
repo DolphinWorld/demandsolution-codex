@@ -1,8 +1,8 @@
 ---
 title: Demand Solution Board
 emoji: 📌
-colorFrom: teal
-colorTo: orange
+colorFrom: blue
+colorTo: green
 sdk: docker
 app_port: 7860
 ---
