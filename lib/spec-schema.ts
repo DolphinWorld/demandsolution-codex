@@ -12,7 +12,7 @@ export const generatedSpecSchema = z.object({
   problem_statement: z.string().min(1).max(2000),
   tags: z.array(z.string().min(1).max(40)).max(10).default([]),
   features: z.array(z.string().min(1).max(300)).min(3).max(7),
-  tasks: z.array(taskSchema).min(10).max(20),
+  tasks: z.array(taskSchema).min(6).max(12),
   open_questions: z.array(z.string().min(1).max(300)).max(10).default([]),
 });
 

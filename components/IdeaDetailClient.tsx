@@ -491,44 +491,6 @@ export function IdeaDetailClient({
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 reveal-up" style={{ animationDelay: "80ms" }}>
-        <div className="card">
-          <h2 className="section-title text-xl">Core Features</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
-            {idea.features.map((feature) => (
-              <li key={feature}>{feature}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="card">
-          <h2 className="section-title text-xl">Open Questions</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
-            {idea.open_questions.length ? idea.open_questions.map((question) => <li key={question}>{question}</li>) : <li>None</li>}
-          </ul>
-        </div>
-      </section>
-
-      <section className="card reveal-up space-y-4" style={{ animationDelay: "140ms" }}>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="section-title">Anonymous Nickname</h2>
-            <p className="subtle mt-1 text-sm">Used for anonymous comments and legacy task claims.</p>
-          </div>
-          <span className="pill">Current: {nickname || "anon"}</span>
-        </div>
-
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="w-full max-w-sm">
-            <label className="mb-1.5 block text-sm font-medium">Nickname</label>
-            <input className="input" value={nickInput} onChange={(event) => setNickInput(event.target.value)} />
-          </div>
-          <button className="btn" onClick={saveNickname}>
-            Save Nickname
-          </button>
-        </div>
-      </section>
-
       <section className="card reveal-up space-y-4" style={{ animationDelay: "180ms" }}>
         <div className="flex items-end justify-between gap-2">
           <div>
@@ -582,113 +544,64 @@ export function IdeaDetailClient({
         <div className="flex items-end justify-between gap-2">
           <div>
             <h2 className="section-title">Solutions</h2>
-            <p className="subtle mt-1 text-sm">Developers can submit app/repo URLs and the idea submitter can approve.</p>
+            <p className="subtle mt-1 text-sm">Only developers who marked "Working on this" can submit solutions.</p>
           </div>
+          <span className="pill">{solutions.length} submitted</span>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white/70 p-3">
-          <div className="grid gap-2 md:grid-cols-2">
-            <input className="input" value={solutionUrl} onChange={(e) => setSolutionUrl(e.target.value)} placeholder="Solution URL (app or repo)" />
-            <input className="input" value={solutionLabel} onChange={(e) => setSolutionLabel(e.target.value)} placeholder="Label (optional)" />
-            <select className="input" value={solutionType} onChange={(e) => setSolutionType(e.target.value as "APP_URL" | "GITHUB_REPO" | "OTHER")}>
-              <option value="APP_URL">App URL</option>
-              <option value="GITHUB_REPO">GitHub repo</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <select className="input" value={solutionTaskId} onChange={(e) => setSolutionTaskId(e.target.value)}>
-              <option value="">For whole idea</option>
-              {idea.tasks.map((task) => (
-                <option key={task.id} value={task.id}>{task.title}</option>
-              ))}
-            </select>
-            <textarea
-              className="input md:col-span-2 min-h-20"
-              value={solutionDescription}
-              onChange={(e) => setSolutionDescription(e.target.value)}
-              placeholder="How this solution addresses the demand"
-            />
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <button className="btn btn-primary" onClick={submitSolution} disabled={!idea.isAuthenticated}>
-              Submit Solution
-            </button>
-            {!idea.isAuthenticated ? <span className="subtle text-xs">Login required for solution submission.</span> : null}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/ideas/${idea.id}/solutions`} className="btn">
+            View Submitted Solutions
+          </Link>
         </div>
 
-        <div className="space-y-2">
-          {solutions.length === 0 ? <p className="subtle text-sm">No solutions submitted yet.</p> : null}
-          {solutions.map((solution) => (
-            <details key={solution.id} className="rounded-xl border border-zinc-200 bg-white/65 p-3">
-              <summary className="cursor-pointer">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold">{solution.label || solution.url}</p>
-                    <p className="subtle text-xs">
-                      by {solution.createdByDisplayName}
-                      {solution.taskTitle ? ` • task: ${solution.taskTitle}` : " • idea-level solution"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {solution.approvedAt ? <span className="pill">Approved</span> : null}
-                    <span className="pill">Score {solution.voteScore}</span>
-                    <span className="pill">{solution.commentsCount} comments</span>
-                  </div>
-                </div>
-              </summary>
-
-              <div className="mt-3 space-y-2 text-sm">
-                <a href={solution.url} target="_blank" rel="noreferrer" className="text-cyan-700 underline">{solution.url}</a>
-                {solution.description ? <p>{solution.description}</p> : null}
-                <p className="subtle text-xs">{new Date(solution.createdAt).toLocaleString()}</p>
-
-                <div className="flex flex-wrap gap-2">
-                  <button className={`btn ${solution.myVote === 1 ? "btn-primary" : ""}`} onClick={() => setSolutionVote(solution.id, 1)}>
-                    Like
-                  </button>
-                  <button className={`btn ${solution.myVote === -1 ? "btn-primary" : ""}`} onClick={() => setSolutionVote(solution.id, -1)}>
-                    Unlike
-                  </button>
-                  {idea.canApproveSolutions && !solution.approvedAt ? (
-                    <button className="btn" onClick={() => approveSolution(solution.id)}>
-                      Approve Solution
-                    </button>
-                  ) : null}
-                  <button className="btn" onClick={() => loadSolutionComments(solution.id)}>
-                    Load Comments
-                  </button>
-                </div>
-
-                <div className="flex gap-2">
-                  <input
-                    className="input"
-                    value={solutionCommentInput[solution.id] || ""}
-                    onChange={(e) =>
-                      setSolutionCommentInput((prev) => ({
-                        ...prev,
-                        [solution.id]: e.target.value,
-                      }))
-                    }
-                    placeholder="Comment on this solution"
-                  />
-                  <button className="btn" onClick={() => addSolutionComment(solution.id)}>
-                    Post
-                  </button>
-                </div>
-
-                {(solutionComments[solution.id] || []).map((comment) => (
-                  <div key={comment.id} className="rounded-lg border border-zinc-200 bg-white/90 p-2 text-xs">
-                    <p>{comment.body}</p>
-                    <p className="subtle mt-1">{comment.author_label || "Anon"} • {new Date(comment.createdAt).toLocaleString()}</p>
-                  </div>
+        {idea.isAuthenticated && idea.idea_working ? (
+          <div className="rounded-xl border border-zinc-200 bg-white/70 p-3">
+            <div className="grid gap-2 md:grid-cols-2">
+              <input className="input" value={solutionUrl} onChange={(e) => setSolutionUrl(e.target.value)} placeholder="Solution URL (app or repo)" />
+              <input className="input" value={solutionLabel} onChange={(e) => setSolutionLabel(e.target.value)} placeholder="Label (optional)" />
+              <select className="input" value={solutionType} onChange={(e) => setSolutionType(e.target.value as "APP_URL" | "GITHUB_REPO" | "OTHER")}>
+                <option value="APP_URL">App URL</option>
+                <option value="GITHUB_REPO">GitHub repo</option>
+                <option value="OTHER">Other</option>
+              </select>
+              <select className="input" value={solutionTaskId} onChange={(e) => setSolutionTaskId(e.target.value)}>
+                <option value="">For whole idea</option>
+                {idea.tasks.map((task) => (
+                  <option key={task.id} value={task.id}>{task.title}</option>
                 ))}
+              </select>
+              <textarea
+                className="input md:col-span-2 min-h-20"
+                value={solutionDescription}
+                onChange={(e) => setSolutionDescription(e.target.value)}
+                placeholder="How this solution addresses the demand"
+              />
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <button className="btn btn-primary" onClick={submitSolution}>
+                Submit Solution
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-zinc-200 bg-white/70 p-3 text-sm">
+            {idea.isAuthenticated ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Mark yourself as working on this idea first, then the solution form will appear.</span>
+                <button className="btn" onClick={toggleIdeaWorking}>Working on this</button>
               </div>
-            </details>
-          ))}
-        </div>
+            ) : (
+              <p>
+                <Link href="/login" className="underline">Sign in</Link> and click "Working on this" to submit a solution.
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="card reveal-up space-y-4" style={{ animationDelay: "240ms" }}>
+
         <div className="flex items-end justify-between gap-2">
           <h2 className="section-title">Comments</h2>
           <span className="pill">{idea.commentsCount} total</span>

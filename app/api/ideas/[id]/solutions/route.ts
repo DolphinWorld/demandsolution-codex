@@ -70,6 +70,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Developer login required" }, { status: 401 });
   }
 
+  const workingVote = await prisma.ideaWorkVote.findUnique({ where: { ideaId_userId: { ideaId: id, userId } } });
+  if (!workingVote) {
+    return NextResponse.json({ error: "Click 'Working on this' before submitting a solution" }, { status: 403 });
+  }
+
   const body = await request.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
