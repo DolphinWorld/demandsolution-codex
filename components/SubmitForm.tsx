@@ -152,7 +152,7 @@ export function SubmitForm({ canShowIdentity }: { canShowIdentity: boolean }) {
             "Generate Requirements"
           )}
         </button>
-        <p className="subtle text-xs">Rate-limited to 5 submissions/hour per anonymous identity and IP.</p>
+        <p className="subtle text-xs">Rate-limited to 20 submissions/hour per anonymous identity and IP.</p>
       </div>
 
       {error ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}

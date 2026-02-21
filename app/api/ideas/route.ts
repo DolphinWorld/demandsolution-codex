@@ -18,7 +18,7 @@ const createIdeaSchema = z.object({
   show_name: z.boolean().optional().default(false),
 });
 
-const RATE_LIMIT_PER_HOUR = 5;
+const RATE_LIMIT_PER_HOUR = 20;
 
 async function checkRateLimit(rateKey: string, ipAddress: string): Promise<boolean> {
   const now = new Date();
