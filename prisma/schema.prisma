@@ -32,6 +32,7 @@ model User {
   approvedSolutions Solution[]       @relation("SolutionApprovedByUser")
   solutionVotes    SolutionUserVote[]
   solutionComments SolutionComment[] @relation("SolutionCommentUser")
+  ideaMerges       IdeaMerge[]
 }
 
 model Account {
@@ -113,6 +114,7 @@ model Idea {
   userVotes IdeaUserVote[]
   workVotes IdeaWorkVote[]
   solutions Solution[]
+  merges    IdeaMerge[]
 }
 
 model Task {
@@ -284,4 +286,24 @@ model SubmissionRateLimit {
   count       Int    @default(0)
 
   @@unique([anonId, ipAddress, windowStart])
+}
+
+
+model IdeaMerge {
+  id              String   @id @default(cuid())
+  targetIdeaId    String
+  mergedByAnonId  String?
+  mergedByUserId  String?
+  rawInputText    String
+  targetUsers     String?
+  platform        String?
+  constraints     String?
+  reason          String
+  similarityScore Float
+  createdAt       DateTime @default(now())
+
+  targetIdea   Idea  @relation(fields: [targetIdeaId], references: [id], onDelete: Cascade)
+  mergedByUser User? @relation(fields: [mergedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([targetIdeaId, createdAt])
 }

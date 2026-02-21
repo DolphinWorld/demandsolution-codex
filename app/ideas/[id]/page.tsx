@@ -4,6 +4,7 @@ import { mapIdea, mapTask } from "@/lib/db-mappers";
 import { getAnonId, getNickname } from "@/lib/identity";
 import { IdeaDetailClient } from "@/components/IdeaDetailClient";
 import { auth } from "@/auth";
+import { canDeleteIdea } from "@/lib/permissions";
 
 const ALLOWED_STATUS = new Set(["OPEN", "IN_PROGRESS", "DONE"] as const);
 
@@ -45,6 +46,7 @@ export default async function IdeaPage({ params }: { params: Promise<{ id: strin
         },
         orderBy: { createdAt: "desc" },
       },
+      merges: { select: { id: true } },
     },
   });
 
@@ -75,6 +77,14 @@ export default async function IdeaPage({ params }: { params: Promise<{ id: strin
     viewerUserId: userId,
     isAuthenticated: Boolean(userId),
     canApproveSolutions: Boolean(userId ? idea.createdByUserId === userId : !idea.createdByUserId && idea.createdByAnonId === anonId),
+    canDelete: canDeleteIdea({
+      ideaOwnerUserId: idea.createdByUserId,
+      ideaOwnerAnonId: idea.createdByAnonId,
+      actorUserId: userId,
+      actorAnonId: anonId || null,
+      actorEmail: session?.user?.email,
+    }),
+    merged_submission_count: idea.merges.length,
     idea_working_count: idea.workVotes.length,
     idea_working: userId ? idea.workVotes.some((vote) => vote.userId === userId) : false,
     tasks: idea.tasks.map((task) => {

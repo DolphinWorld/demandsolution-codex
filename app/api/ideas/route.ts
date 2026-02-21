@@ -6,6 +6,8 @@ import { getAnonId, getClientIp } from "@/lib/identity";
 import { mapIdea, mapTask } from "@/lib/db-mappers";
 import { scoreHot } from "@/lib/hot-score";
 import { auth } from "@/auth";
+import { findBlockedContent } from "@/lib/content-moderation";
+import { detectMergeTarget } from "@/lib/idea-dedup";
 
 const createIdeaSchema = z.object({
   raw_input_text: z.string().min(20).max(3000),
@@ -44,6 +46,25 @@ async function checkRateLimit(rateKey: string, ipAddress: string): Promise<boole
   });
 
   return true;
+}
+
+async function applyMergeSupportVote(ideaId: string, userId: string | null, anonId: string | null) {
+  if (userId) {
+    const existing = await prisma.ideaUserVote.findUnique({ where: { ideaId_userId: { ideaId, userId } } });
+    if (existing) return;
+
+    await prisma.ideaUserVote.create({ data: { ideaId, userId } });
+    await prisma.idea.update({ where: { id: ideaId }, data: { upvotesCount: { increment: 1 } } });
+    return;
+  }
+
+  if (anonId) {
+    const existing = await prisma.vote.findUnique({ where: { ideaId_anonId: { ideaId, anonId } } });
+    if (existing) return;
+
+    await prisma.vote.create({ data: { ideaId, anonId } });
+    await prisma.idea.update({ where: { id: ideaId }, data: { upvotesCount: { increment: 1 } } });
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -137,6 +158,78 @@ export async function POST(request: NextRequest) {
 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const moderation = findBlockedContent(parsed.data.raw_input_text, parsed.data.target_users, parsed.data.constraints);
+  if (moderation.blocked) {
+    return NextResponse.json(
+      {
+        error: "Submission blocked: obvious offensive or inappropriate language detected. Please revise and submit again.",
+        labels: moderation.labels,
+      },
+      { status: 400 }
+    );
+  }
+
+  const dedupInput = [parsed.data.raw_input_text, parsed.data.target_users, parsed.data.platform, parsed.data.constraints]
+    .filter((value): value is string => Boolean(value))
+    .join("\n");
+
+  const candidates = await prisma.idea.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 200,
+    select: {
+      id: true,
+      rawInputText: true,
+      title: true,
+      problemStatement: true,
+    },
+  });
+
+  const mergeTarget = detectMergeTarget(
+    dedupInput,
+    candidates.map((candidate) => ({
+      id: candidate.id,
+      text: `${candidate.rawInputText}\n${candidate.title}\n${candidate.problemStatement}`,
+    }))
+  );
+
+  if (mergeTarget) {
+    const existing = await prisma.idea.findUnique({ where: { id: mergeTarget.targetIdeaId } });
+
+    if (existing) {
+      await prisma.ideaMerge.create({
+        data: {
+          targetIdeaId: existing.id,
+          mergedByAnonId: anonId || null,
+          mergedByUserId: userId,
+          rawInputText: parsed.data.raw_input_text,
+          targetUsers: parsed.data.target_users,
+          platform: parsed.data.platform,
+          constraints: parsed.data.constraints,
+          reason: mergeTarget.reason,
+          similarityScore: mergeTarget.similarityScore,
+        },
+      });
+
+      await applyMergeSupportVote(existing.id, userId, anonId || null);
+
+      return NextResponse.json(
+        {
+          merged: true,
+          reason: mergeTarget.reason,
+          message:
+            mergeTarget.reason === "SUBSET"
+              ? "Your submission is a subset of an existing idea and has been merged into that thread."
+              : "Your submission matches an existing idea and has been merged into that thread.",
+          idea: {
+            id: existing.id,
+            title: existing.title,
+          },
+        },
+        { status: 200 }
+      );
+    }
   }
 
   try {

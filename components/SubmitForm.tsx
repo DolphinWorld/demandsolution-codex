@@ -51,7 +51,12 @@ export function SubmitForm({ canShowIdentity }: { canShowIdentity: boolean }) {
         throw new Error(parseErrorMessage(data));
       }
 
-      router.push(`/ideas/${data.idea.id}`);
+      if (data.merged && data.idea?.id) {
+        const reason = encodeURIComponent(data.reason || "DUPLICATE");
+        router.push(`/ideas/${data.idea.id}?merged=1&reason=${reason}`);
+      } else {
+        router.push(`/ideas/${data.idea.id}`);
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error.");

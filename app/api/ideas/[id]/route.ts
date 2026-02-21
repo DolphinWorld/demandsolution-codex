@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { mapIdea, mapTask } from "@/lib/db-mappers";
 import { getAnonId } from "@/lib/identity";
 import { auth } from "@/auth";
+import { canDeleteIdea, isAdminEmail } from "@/lib/permissions";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -31,6 +32,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
         },
         orderBy: { createdAt: "desc" },
       },
+      merges: {
+        select: { id: true },
+      },
     },
   });
 
@@ -50,6 +54,14 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     ? idea.userVotes.some((vote) => vote.userId === userId)
     : idea.votes.some((vote) => vote.anonId === anonId);
 
+  const canDelete = canDeleteIdea({
+    ideaOwnerUserId: idea.createdByUserId,
+    ideaOwnerAnonId: idea.createdByAnonId,
+    actorUserId: userId,
+    actorAnonId: anonId || null,
+    actorEmail: session?.user?.email,
+  });
+
   return NextResponse.json({
     idea: {
       ...mapIdea(idea),
@@ -59,6 +71,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
       viewerAnonId: anonId,
       viewerUserId: userId,
       canApproveSolutions: Boolean(userId ? idea.createdByUserId === userId : !idea.createdByUserId && idea.createdByAnonId === anonId),
+      canDelete,
+      isAdmin: isAdminEmail(session?.user?.email),
+      merged_submission_count: idea.merges.length,
       isVoted,
       idea_working_count: idea.workVotes.length,
       idea_working: userId ? idea.workVotes.some((vote) => vote.userId === userId) : false,
@@ -85,4 +100,39 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
       })),
     },
   });
+}
+
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  const anonId = await getAnonId();
+  const { id } = await params;
+
+  const idea = await prisma.idea.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      createdByUserId: true,
+      createdByAnonId: true,
+    },
+  });
+
+  if (!idea) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const allowed = canDeleteIdea({
+    ideaOwnerUserId: idea.createdByUserId,
+    ideaOwnerAnonId: idea.createdByAnonId,
+    actorUserId: userId,
+    actorAnonId: anonId || null,
+    actorEmail: session?.user?.email,
+  });
+
+  if (!allowed) {
+    return NextResponse.json({ error: "Only submitter or admin can delete this idea" }, { status: 403 });
+  }
+
+  await prisma.idea.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { fetchWithAnon } from "@/lib/client-anon";
 
@@ -66,6 +67,8 @@ type IdeaPayload = {
   viewerUserId: string | null;
   isAuthenticated: boolean;
   canApproveSolutions: boolean;
+  canDelete: boolean;
+  merged_submission_count: number;
   idea_working_count: number;
   idea_working: boolean;
   tasks: TaskItem[];
@@ -105,6 +108,8 @@ export function IdeaDetailClient({
   isVoted: boolean;
   initialNickname: string;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [idea, setIdea] = useState(initialIdea);
   const [voted, setVoted] = useState(isVoted);
   const [nickname, setNickname] = useState(initialNickname);
@@ -120,6 +125,14 @@ export function IdeaDetailClient({
 
   const [solutionComments, setSolutionComments] = useState<Record<string, SolutionCommentItem[]>>({});
   const [solutionCommentInput, setSolutionCommentInput] = useState<Record<string, string>>({});
+  const [actionError, setActionError] = useState("");
+
+  const mergeNotice = useMemo(() => {
+    if (searchParams.get("merged") !== "1") return "";
+    return searchParams.get("reason") === "SUBSET"
+      ? "Your submission was merged: it is a subset of this existing idea."
+      : "Your submission was merged: this idea already exists, so discussion stays in one thread.";
+  }, [searchParams]);
 
   function applyTaskUpdate(taskId: string, taskUpdate: TaskUpdate) {
     setIdea((prev) => ({
@@ -363,6 +376,24 @@ export function IdeaDetailClient({
     setSolutions((prev) => prev.map((solution) => (solution.id === solutionId ? { ...solution, approvedAt } : solution)));
   }
 
+  async function deleteIdea() {
+    if (!idea.canDelete) return;
+
+    const confirmed = window.confirm("Delete this post? This action cannot be undone.");
+    if (!confirmed) return;
+
+    setActionError("");
+    const response = await fetchWithAnon(`/api/ideas/${idea.id}`, { method: "DELETE" });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      setActionError((data && typeof data.error === "string" ? data.error : "Failed to delete post.") || "Failed to delete post.");
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
+  }
+
   async function loadSolutionComments(solutionId: string) {
     const response = await fetchWithAnon(`/api/solutions/${solutionId}/comments`);
     if (!response.ok) return;
@@ -405,6 +436,10 @@ export function IdeaDetailClient({
         <h1 className="section-title mt-2 text-3xl md:text-4xl">{idea.title}</h1>
         <p className="subtle mt-4 max-w-4xl text-sm md:text-base">{idea.problemStatement}</p>
 
+        {mergeNotice ? (
+          <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">{mergeNotice}</p>
+        ) : null}
+
         <div className="mt-4 flex flex-wrap gap-1.5">
           {idea.tags.map((tag) => (
             <span key={tag} className="badge">
@@ -412,6 +447,7 @@ export function IdeaDetailClient({
             </span>
           ))}
           <span className="pill">Submitter: {idea.submitter_label}</span>
+          <span className="pill">Merged submissions: {idea.merged_submission_count}</span>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2 md:gap-3">
@@ -423,7 +459,14 @@ export function IdeaDetailClient({
           </button>
           <span className="pill">{idea.commentsCount} comments</span>
           <span className="pill">{idea.tasks.length} tasks</span>
+          {idea.canDelete ? (
+            <button className="btn border-red-200 text-red-700 hover:bg-red-50" onClick={deleteIdea}>
+              Delete Post
+            </button>
+          ) : null}
         </div>
+
+        {actionError ? <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{actionError}</p> : null}
 
         {!idea.isAuthenticated ? (
           <p className="subtle mt-2 text-xs">
