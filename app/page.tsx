@@ -18,7 +18,6 @@ export default function HomePage() {
                 Start a New Idea
               </Link>
               <span className="pill">No login required</span>
-              <span className="pill">Cookie-based identity</span>
             </div>
           </div>
 

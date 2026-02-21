@@ -12,6 +12,8 @@ type IdeaCard = {
   comment_count: number;
   createdAt: string;
   submitter_label?: string;
+  idea_working_count?: number;
+  working_developers?: string[];
 };
 
 export function HomeList() {
@@ -19,6 +21,7 @@ export function HomeList() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<IdeaCard[]>([]);
   const [error, setError] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let active = true;
@@ -72,43 +75,73 @@ export function HomeList() {
       {empty ? <p className="subtle text-sm">No ideas yet. Be the first to submit one.</p> : null}
 
       <div className="grid gap-3">
-        {items.map((idea, index) => (
-          <Link
-            key={idea.id}
-            href={`/ideas/${idea.id}`}
-            className="card block reveal-up"
-            style={{ animationDelay: `${Math.min(index * 45, 240)}ms` }}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <h3 className="text-base font-semibold md:text-lg">{idea.title}</h3>
-              <span className="subtle text-xs">{new Date(idea.createdAt).toLocaleString()}</span>
-            </div>
+        {items.map((idea, index) => {
+          const workers = idea.working_developers || [];
+          const isExpanded = Boolean(expanded[idea.id]);
 
-            <p className="subtle mt-2 text-sm">{idea.problemStatement}</p>
-            <p className="subtle mt-2 text-xs">Submitter: {idea.submitter_label || "Anonymous"}</p>
+          return (
+            <article key={idea.id} className="card reveal-up" style={{ animationDelay: `${Math.min(index * 45, 240)}ms` }}>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <Link href={`/ideas/${idea.id}`} className="text-base font-semibold md:text-lg hover:underline">
+                  {idea.title}
+                </Link>
+                <span className="subtle text-xs">{new Date(idea.createdAt).toLocaleString()}</span>
+              </div>
 
-            {idea.tags.length ? (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {idea.tags.slice(0, 6).map((tag) => (
-                  <span key={tag} className="badge">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+              <p className="subtle mt-2 text-sm">{idea.problemStatement}</p>
+              <p className="subtle mt-2 text-xs">Submitter: {idea.submitter_label || "Anonymous"}</p>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 md:max-w-xs">
-              <div className="metric">
-                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Upvotes</p>
-                <p className="mt-1 text-sm font-semibold">{idea.upvotesCount}</p>
+              {idea.tags.length ? (
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {idea.tags.slice(0, 6).map((tag) => (
+                    <span key={tag} className="badge">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="mt-4 grid grid-cols-3 gap-2 md:max-w-md">
+                <div className="metric">
+                  <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Upvotes</p>
+                  <p className="mt-1 text-sm font-semibold">{idea.upvotesCount}</p>
+                </div>
+                <div className="metric">
+                  <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Comments</p>
+                  <p className="mt-1 text-sm font-semibold">{idea.comment_count}</p>
+                </div>
+                <button
+                  type="button"
+                  className="metric text-left"
+                  onClick={() =>
+                    setExpanded((prev) => ({
+                      ...prev,
+                      [idea.id]: !prev[idea.id],
+                    }))
+                  }
+                >
+                  <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Developers working</p>
+                  <p className="mt-1 text-sm font-semibold">{idea.idea_working_count ?? workers.length}</p>
+                </button>
               </div>
-              <div className="metric">
-                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Comments</p>
-                <p className="mt-1 text-sm font-semibold">{idea.comment_count}</p>
-              </div>
-            </div>
-          </Link>
-        ))}
+
+              {isExpanded ? (
+                <div className="mt-3 rounded-lg border border-zinc-200 bg-white/85 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Developer list</p>
+                  {workers.length > 0 ? (
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                      {workers.map((name) => (
+                        <li key={name}>{name}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="subtle mt-2 text-sm">No developers have marked this topic yet.</p>
+                  )}
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

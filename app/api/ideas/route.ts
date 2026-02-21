@@ -61,6 +61,17 @@ export async function GET(request: NextRequest) {
       createdByUser: {
         select: { name: true, developerProfile: { select: { displayName: true } } },
       },
+      workVotes: {
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+              developerProfile: { select: { displayName: true } },
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -72,11 +83,27 @@ export async function GET(request: NextRequest) {
     const visibleName =
       idea.submitterVisibleName || idea.createdByUser?.developerProfile?.displayName || idea.createdByUser?.name || null;
 
+    const workingDevelopers = Array.from(
+      new Set(
+        idea.workVotes
+          .map(
+            (vote) =>
+              vote.user.developerProfile?.displayName ||
+              vote.user.name ||
+              vote.user.email?.split("@")[0] ||
+              "Developer"
+          )
+          .filter(Boolean)
+      )
+    );
+
     return {
       ...mapIdea(idea),
       comment_count: idea.commentsCount,
       submitter_label: idea.isAnonymous ? "Anonymous" : visibleName || "Member",
       is_anonymous: idea.isAnonymous,
+      idea_working_count: workingDevelopers.length,
+      working_developers: workingDevelopers,
     };
   });
 
