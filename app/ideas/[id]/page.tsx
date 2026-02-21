@@ -5,6 +5,7 @@ import { getAnonId, getNickname } from "@/lib/identity";
 import { IdeaDetailClient } from "@/components/IdeaDetailClient";
 import { auth } from "@/auth";
 import { canDeleteIdea } from "@/lib/permissions";
+import { buildMeaningfulTitle } from "@/lib/title";
 
 const ALLOWED_STATUS = new Set(["OPEN", "IN_PROGRESS", "DONE"] as const);
 
@@ -68,8 +69,16 @@ export default async function IdeaPage({ params }: { params: Promise<{ id: strin
     : [];
   const nicknameByAnonId = new Map(claimantNicknames.map((row) => [row.anonId, row.nickname]));
 
+  const mappedIdea = mapIdea(idea);
+  const displayTitle = buildMeaningfulTitle({
+    rawInputText: idea.rawInputText,
+    title: idea.title,
+    problemStatement: idea.problemStatement,
+  });
+
   const payload = {
-    ...mapIdea(idea),
+    ...mappedIdea,
+    title: displayTitle,
     submitter_label: idea.isAnonymous
       ? "Anonymous"
       : idea.submitterVisibleName || idea.createdByUser?.developerProfile?.displayName || idea.createdByUser?.name || "Member",

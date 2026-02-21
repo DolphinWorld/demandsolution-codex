@@ -4,6 +4,7 @@ import { mapIdea, mapTask } from "@/lib/db-mappers";
 import { getAnonId } from "@/lib/identity";
 import { auth } from "@/auth";
 import { canDeleteIdea, isAdminEmail } from "@/lib/permissions";
+import { buildMeaningfulTitle } from "@/lib/title";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -62,9 +63,17 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     actorEmail: session?.user?.email,
   });
 
+  const mappedIdea = mapIdea(idea);
+  const displayTitle = buildMeaningfulTitle({
+    rawInputText: idea.rawInputText,
+    title: idea.title,
+    problemStatement: idea.problemStatement,
+  });
+
   return NextResponse.json({
     idea: {
-      ...mapIdea(idea),
+      ...mappedIdea,
+      title: displayTitle,
       submitter_label: idea.isAnonymous
         ? "Anonymous"
         : idea.submitterVisibleName || idea.createdByUser?.developerProfile?.displayName || idea.createdByUser?.name || "Member",

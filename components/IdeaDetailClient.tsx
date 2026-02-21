@@ -57,6 +57,10 @@ type IdeaPayload = {
   id: string;
   title: string;
   problemStatement: string;
+  rawInputText: string;
+  targetUsers: string | null;
+  platform: string | null;
+  constraints: string | null;
   tags: string[];
   features: string[];
   open_questions: string[];
@@ -473,6 +477,18 @@ export function IdeaDetailClient({
             <Link href="/login" className="underline">Sign in</Link> to submit solutions and add developer work votes.
           </p>
         ) : null}
+      </section>
+
+      <section className="card reveal-up" style={{ animationDelay: "70ms" }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="section-title text-xl">Original Submission</h2>
+          {idea.platform ? <span className="pill">Platform: {idea.platform}</span> : null}
+          {idea.targetUsers ? <span className="pill">Target: {idea.targetUsers}</span> : null}
+        </div>
+        {idea.constraints ? <p className="subtle mt-2 text-xs">Constraints: {idea.constraints}</p> : null}
+        <p className="mt-3 whitespace-pre-wrap break-words rounded-xl border border-zinc-200 bg-white/70 p-3 text-sm leading-6">
+          {idea.rawInputText}
+        </p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 reveal-up" style={{ animationDelay: "80ms" }}>

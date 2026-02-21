@@ -8,6 +8,7 @@ import { scoreHot } from "@/lib/hot-score";
 import { auth } from "@/auth";
 import { findBlockedContent } from "@/lib/content-moderation";
 import { detectMergeTarget } from "@/lib/idea-dedup";
+import { buildMeaningfulTitle } from "@/lib/title";
 
 const createIdeaSchema = z.object({
   raw_input_text: z.string().min(20).max(3000),
@@ -101,6 +102,11 @@ export async function GET(request: NextRequest) {
   const page = hasMore ? ideas.slice(0, limit) : ideas;
 
   const mapped = page.map((idea) => {
+    const displayTitle = buildMeaningfulTitle({
+      rawInputText: idea.rawInputText,
+      title: idea.title,
+      problemStatement: idea.problemStatement,
+    });
     const visibleName =
       idea.submitterVisibleName || idea.createdByUser?.developerProfile?.displayName || idea.createdByUser?.name || null;
 
@@ -120,6 +126,7 @@ export async function GET(request: NextRequest) {
 
     return {
       ...mapIdea(idea),
+      title: displayTitle,
       comment_count: idea.commentsCount,
       submitter_label: idea.isAnonymous ? "Anonymous" : visibleName || "Member",
       is_anonymous: idea.isAnonymous,
@@ -234,6 +241,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const spec = await generateSpec(parsed.data);
+    const displayTitle = buildMeaningfulTitle({
+      rawInputText: parsed.data.raw_input_text,
+      title: spec.title,
+      problemStatement: spec.problem_statement,
+    });
 
     let submitterVisibleName: string | null = null;
     const isAnonymous = !(parsed.data.show_name && userId);
@@ -254,7 +266,7 @@ export async function POST(request: NextRequest) {
         targetUsers: parsed.data.target_users,
         platform: parsed.data.platform,
         constraints: parsed.data.constraints,
-        title: spec.title,
+        title: displayTitle,
         problemStatement: spec.problem_statement,
         tags: JSON.stringify(spec.tags),
         features: JSON.stringify(spec.features),
@@ -276,6 +288,7 @@ export async function POST(request: NextRequest) {
       {
         idea: {
           ...mapIdea(idea),
+      title: displayTitle,
           submitter_label: idea.isAnonymous ? "Anonymous" : submitterVisibleName || "Member",
           tasks: idea.tasks.map((task) => ({
             ...mapTask(task),
