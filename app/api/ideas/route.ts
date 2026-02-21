@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
 
   const candidates = await prisma.idea.findMany({
     orderBy: { createdAt: "desc" },
-    take: 200,
+    take: 500,
     select: {
       id: true,
       rawInputText: true,
