@@ -93,7 +93,7 @@ def call_ollama_single(model: str, item: Dict) -> Dict:
 
 
 def call_openai(model: str, items: List[Dict]) -> Dict:
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = (os.getenv("OPENAI_API_KEY") or "").strip().strip('"').strip("'")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not set")
 
