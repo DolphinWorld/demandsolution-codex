@@ -81,3 +81,15 @@ This repo includes a `Dockerfile` for Spaces. `DATABASE_URL` is required at runt
 For OIDC in Spaces, set `AUTH_URL` to your direct Space domain (for this app: `https://jacksuyu-demandsolution-codex.hf.space`) and configure Google callback URL:
 
 - `https://jacksuyu-demandsolution-codex.hf.space/api/auth/callback/google`
+
+## Daily Social Requirement Sync (GitHub Actions)
+
+This repo includes a daily workflow to collect user requirements from Reddit, LLM-filter to clear software requirements, and auto-post accepted requirements into the live DemandSolution board (tagged `_social_`).
+
+- Workflow file: `/Users/jacksu/projects/demandsolution_codex/.github/workflows/daily-social-requirements.yml`
+- Schedule: daily at `13:15 UTC`
+
+Required GitHub repository settings:
+
+- Secret: `OPENAI_API_KEY`
+- Variable: `DEMANDSOLUTION_SITE_URL` (example: `https://jacksuyu-demandsolution-codex.hf.space/`)
