@@ -7,3 +7,4 @@ prisma/dev.db-journal
 __pycache__/
 *.pyc
 data/reddit_requirements/*_utc/
+data/social_requirements/*_utc/

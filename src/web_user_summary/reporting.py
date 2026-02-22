@@ -27,16 +27,16 @@ def write_json(path: Path, payload: Dict) -> None:
 
 def write_markdown_report(path: Path, meta: Dict, clusters: List[DemandCluster], top_n: int = 25) -> None:
     lines: List[str] = []
-    lines.append("# Reddit User Demand Summary")
+    lines.append("# Social User Demand Summary")
     lines.append("")
     lines.append("## Run Metrics")
     lines.append(f"- Total posts scanned: {meta.get('total_posts', 0)}")
     lines.append(f"- Demand candidates: {meta.get('total_candidates', 0)}")
     lines.append(f"- Demand clusters: {meta.get('total_clusters', 0)}")
     lines.append("")
-    lines.append("## Subreddit Coverage")
+    lines.append("## Source Coverage")
     for sub, count in meta.get("subreddit_post_counts", {}).items():
-        lines.append(f"- r/{sub}: {count} posts")
+        lines.append(f"- {sub}: {count} posts")
     lines.append("")
     lines.append("## Top Demand Themes")
 
@@ -46,7 +46,7 @@ def write_markdown_report(path: Path, meta: Dict, clusters: List[DemandCluster],
         lines.append(f"- Mentions: {cluster.demand_count}")
         lines.append(f"- Avg confidence: {cluster.confidence_avg}")
         lines.append(f"- Avg urgency: {cluster.urgency_avg}")
-        lines.append(f"- Subreddits: {', '.join(cluster.subreddits)}")
+        lines.append(f"- Sources: {', '.join(cluster.subreddits)}")
         lines.append(f"- Keywords: {', '.join(cluster.keywords)}")
         if cluster.examples:
             ex = cluster.examples[0]

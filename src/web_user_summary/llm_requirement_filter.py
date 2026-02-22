@@ -205,7 +205,7 @@ def normalize_result(result: Dict) -> Dict:
 def main() -> None:
     args = parse_args()
     root = Path(__file__).resolve().parents[2]
-    base_data = root / "data" / "reddit_requirements"
+    base_data = root / "data" / "social_requirements"
     input_dir = Path(args.input_dir) if args.input_dir else latest_data_dir(base_data)
     clusters_path = input_dir / "demand_clusters.json"
 

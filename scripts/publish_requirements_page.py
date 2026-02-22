@@ -10,11 +10,11 @@ from typing import Dict, List
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Publish accepted Reddit requirements to markdown/html pages.")
+    parser = argparse.ArgumentParser(description="Publish accepted social requirements to markdown/html pages.")
     parser.add_argument(
         "--input-dir",
         default="",
-        help="Directory under data/reddit_requirements containing llm_requirement_accepted_curated.json",
+        help="Directory under data/social_requirements containing llm_requirement_accepted_curated.json",
     )
     return parser.parse_args()
 
@@ -40,7 +40,7 @@ def load_accepted(input_dir: Path) -> List[Dict]:
 
 def render_markdown(run_dir: Path, accepted: List[Dict]) -> str:
     lines: List[str] = []
-    lines.append("# Reddit User Requirements (LLM Curated)")
+    lines.append("# Social User Requirements (LLM Curated)")
     lines.append("")
     lines.append(f"- Source run: `{run_dir.name}`")
     lines.append(f"- Generated at: `{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}`")
@@ -99,7 +99,7 @@ def render_html(run_dir: Path, accepted: List[Dict]) -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reddit User Requirements</title>
+  <title>Social User Requirements</title>
   <style>
     :root {{
       --bg: #0b1020;
@@ -122,7 +122,7 @@ def render_html(run_dir: Path, accepted: List[Dict]) -> str:
 </head>
 <body>
   <main class="wrap">
-    <h1>Reddit User Requirements (LLM Curated)</h1>
+    <h1>Social User Requirements (LLM Curated)</h1>
     <p class="meta">Source run: {run_dir.name} | Generated: {stamp} | Accepted: {len(accepted)}</p>
     <section class="grid">
       {''.join(cards)}
@@ -136,14 +136,14 @@ def render_html(run_dir: Path, accepted: List[Dict]) -> str:
 def main() -> None:
     args = parse_args()
     root = Path(__file__).resolve().parents[1]
-    base = root / "data" / "reddit_requirements"
+    base = root / "data" / "social_requirements"
     run_dir = Path(args.input_dir) if args.input_dir else latest_run_dir(base)
     accepted = load_accepted(run_dir)
 
     out_dir = root / "pages" / "requirements"
     out_dir.mkdir(parents=True, exist_ok=True)
-    md_path = out_dir / "reddit_user_requirements.md"
-    html_path = out_dir / "reddit_user_requirements.html"
+    md_path = out_dir / "social_user_requirements.md"
+    html_path = out_dir / "social_user_requirements.html"
 
     md_path.write_text(render_markdown(run_dir, accepted), encoding="utf-8")
     html_path.write_text(render_html(run_dir, accepted), encoding="utf-8")
@@ -156,4 +156,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

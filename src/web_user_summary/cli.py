@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import argparse
 import os
+import time
 from pathlib import Path
 from typing import List
 
 from .demand_extractor import build_meta_summary, cluster_demands, extract_demand_candidates
-from .reddit_client import RedditClient
+from .social_client import SocialClient
 from .reporting import (
     build_demandsolution_seed,
     serialize_candidates,
@@ -18,23 +19,26 @@ from .reporting import (
     write_markdown_report,
 )
 
-DEFAULT_SUBREDDITS = "SaaS,startups,SideProject,Entrepreneur,smallbusiness,productivity,webdev"
-DEFAULT_USER_AGENT = "web-user-summary/0.1 (contact: jacksuyu@gmail.com)"
+DEFAULT_SOURCES = "hackernews,stackoverflow"
+DEFAULT_USER_AGENT = "demand-signal-collector/0.1 (contact: jacksuyu@gmail.com)"
 DEFAULT_SEARCH_QUERIES = "need app,looking for tool,wish there was,how do i automate,any software for,struggling with"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Collect and summarize user demand from Reddit.")
-    parser.add_argument("--subreddits", default=DEFAULT_SUBREDDITS, help="Comma-separated subreddit list.")
-    parser.add_argument("--sort", default="new", choices=["new", "hot", "top"], help="Reddit listing type.")
-    parser.add_argument("--per-subreddit", type=int, default=80, help="Maximum posts fetched per subreddit.")
+    parser = argparse.ArgumentParser(description="Collect and summarize user demand from public social sources.")
+    parser.add_argument("--sources", default=DEFAULT_SOURCES, help="Comma-separated sources: hackernews,stackoverflow")
+    parser.add_argument("--per-query-per-source", type=int, default=40, help="Max posts/questions fetched per query per source.")
+    parser.add_argument("--stackexchange-site", default="stackoverflow", help="StackExchange site (default: stackoverflow).")
     parser.add_argument("--hours", type=int, default=168, help="Only include posts newer than this many hours.")
     parser.add_argument("--min-score", type=int, default=2, help="Minimum demand confidence score.")
     parser.add_argument("--similarity-threshold", type=float, default=0.62, help="Fuzzy grouping threshold (0-1).")
-    parser.add_argument("--output-dir", default="data/reddit_requirements", help="Base output directory.")
-    parser.add_argument("--user-agent", default=os.getenv("REDDIT_USER_AGENT", DEFAULT_USER_AGENT), help="HTTP User-Agent.")
+    parser.add_argument("--output-dir", default="data/social_requirements", help="Base output directory.")
+    parser.add_argument(
+        "--user-agent",
+        default=os.getenv("SOCIAL_USER_AGENT", os.getenv("REDDIT_USER_AGENT", DEFAULT_USER_AGENT)),
+        help="HTTP User-Agent.",
+    )
     parser.add_argument("--search-queries", default=DEFAULT_SEARCH_QUERIES, help="Comma-separated query terms for /search.json.")
-    parser.add_argument("--search-per-query", type=int, default=20, help="Posts fetched per query per subreddit.")
     parser.add_argument(
         "--include-self-promo",
         action="store_true",
@@ -43,57 +47,60 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_subreddits(raw: str) -> List[str]:
-    return [s.strip() for s in raw.split(",") if s.strip()]
-
-
 def parse_csv_terms(raw: str) -> List[str]:
     return [s.strip() for s in raw.split(",") if s.strip()]
 
 
 def main() -> None:
     args = parse_args()
-    subreddits = parse_subreddits(args.subreddits)
-    if not subreddits:
-        raise ValueError("At least one subreddit is required.")
+    sources = {s.lower() for s in parse_csv_terms(args.sources)}
+    if not sources:
+        raise ValueError("At least one source is required.")
+    if not {"hackernews", "stackoverflow"} & sources:
+        raise ValueError("Supported sources are: hackernews, stackoverflow")
 
-    client = RedditClient(user_agent=args.user_agent)
+    client = SocialClient(user_agent=args.user_agent)
     search_queries = parse_csv_terms(args.search_queries)
     all_posts = []
     fetch_failures = []
-    for subreddit in subreddits:
-        try:
-            posts = client.fetch_subreddit_posts(subreddit=subreddit, sort=args.sort, limit=args.per_subreddit)
-        except Exception as exc:
-            message = f"Failed listing r/{subreddit}: {exc}"
-            fetch_failures.append(message)
-            print(f"[WARN] {message}")
-            continue
+    from_date = int(time.time()) - (args.hours * 3600)
 
-        all_posts.extend(posts)
-        print(f"Fetched {len(posts):>3} posts from r/{subreddit}")
-        for query in search_queries:
+    for query in search_queries:
+        if "hackernews" in sources:
             try:
-                q_posts = client.fetch_subreddit_search(
-                    subreddit=subreddit, query=query, sort=args.sort, limit=args.search_per_query
-                )
-                all_posts.extend(q_posts)
-                print(f"  + search '{query}': {len(q_posts):>3} posts")
+                hn_posts = client.fetch_hn_search(query=query, limit=args.per_query_per_source)
+                all_posts.extend(hn_posts)
+                print(f"HN query '{query}': {len(hn_posts):>3} posts")
             except Exception as exc:
-                message = f"Failed search r/{subreddit} query='{query}': {exc}"
+                message = f"Failed HN query='{query}': {exc}"
+                fetch_failures.append(message)
+                print(f"[WARN] {message}")
+
+        if "stackoverflow" in sources:
+            try:
+                se_posts = client.fetch_stackexchange_search(
+                    query=query,
+                    site=args.stackexchange_site,
+                    limit=args.per_query_per_source,
+                    from_date_utc=from_date,
+                )
+                all_posts.extend(se_posts)
+                print(f"SE({args.stackexchange_site}) query '{query}': {len(se_posts):>3} posts")
+            except Exception as exc:
+                message = f"Failed StackExchange query='{query}': {exc}"
                 fetch_failures.append(message)
                 print(f"[WARN] {message}")
 
     if not all_posts:
         raise RuntimeError(
-            "No Reddit posts were fetched. In GitHub Actions, set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET "
-            "repository secrets, and set REDDIT_USER_AGENT as a repository variable."
+            "No social posts were fetched from Hacker News/StackExchange. "
+            "Check network access and try reducing --per-query-per-source."
         )
 
-    # Deduplicate by post ID
+    # Deduplicate by source + post ID
     dedup = {}
     for post in all_posts:
-        dedup[post.id] = post
+        dedup[f"{post.subreddit}:{post.id}"] = post
     posts = list(dedup.values())
 
     candidates = extract_demand_candidates(
@@ -115,7 +122,7 @@ def main() -> None:
             "clusters": serialize_clusters(clusters),
         },
     )
-    write_json(out_dir / "demandsolution_seed_ideas.json", build_demandsolution_seed(clusters))
+    write_json(out_dir / "demandsolution_seed_ideas.json", build_demandsolution_seed(clusters, source_name="social"))
     write_markdown_report(out_dir / "report.md", meta=meta, clusters=clusters)
 
     print("")

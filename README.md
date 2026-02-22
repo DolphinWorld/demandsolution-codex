@@ -84,7 +84,7 @@ For OIDC in Spaces, set `AUTH_URL` to your direct Space domain (for this app: `h
 
 ## Daily Social Requirement Sync (GitHub Actions)
 
-This repo includes a daily workflow to collect user requirements from Reddit, LLM-filter to clear software requirements, and auto-post accepted requirements into the live DemandSolution board (tagged `_social_`).
+This repo includes a daily workflow to collect user requirements from free social sources (Hacker News + StackOverflow), LLM-filter to clear software requirements, and auto-post accepted requirements into the live DemandSolution board (tagged `_social_`).
 
 - Workflow file: `/Users/jacksu/projects/demandsolution_codex/.github/workflows/daily-social-requirements.yml`
 - Schedule: daily at `13:15 UTC`
@@ -93,6 +93,3 @@ Required GitHub repository settings:
 
 - Secret: `OPENAI_API_KEY`
 - Variable: `DEMANDSOLUTION_SITE_URL` (example: `https://jacksuyu-demandsolution-codex.hf.space/`)
-- Secret: `REDDIT_CLIENT_ID`
-- Secret: `REDDIT_CLIENT_SECRET`
-- Variable: `REDDIT_USER_AGENT` (example: `demand-sync-bot/1.0 by u/<your_reddit_username>`)

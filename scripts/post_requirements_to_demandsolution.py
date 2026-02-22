@@ -22,11 +22,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input-dir",
         default="",
-        help="Run directory with llm_requirement_accepted_curated.json (default: latest under data/reddit_requirements).",
+        help="Run directory with llm_requirement_accepted_curated.json (default: latest under data/social_requirements).",
     )
     parser.add_argument(
         "--state-file",
-        default="data/reddit_requirements/posting_state.json",
+        default="data/social_requirements/posting_state.json",
         help="Path to posting state file for dedupe.",
     )
     parser.add_argument("--timeout-s", type=int, default=60)
@@ -87,7 +87,7 @@ def build_raw_input_text(item: Dict) -> str:
         f"User requirement from social community: {requirement}",
         "",
         "Context:",
-        f"- Source: Reddit",
+        f"- Source: Social (Hacker News / StackExchange)",
         f"- Mention count in this run: {mentions}",
     ]
     if reason:
@@ -143,7 +143,7 @@ def render_report(run_dir: Path, results: List[Dict]) -> None:
 def main() -> None:
     args = parse_args()
     root = Path(__file__).resolve().parents[1]
-    base_data = root / "data" / "reddit_requirements"
+    base_data = root / "data" / "social_requirements"
     run_dir = Path(args.input_dir) if args.input_dir else latest_run_dir(base_data)
     state_file = root / args.state_file if not Path(args.state_file).is_absolute() else Path(args.state_file)
 
