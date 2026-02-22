@@ -9,6 +9,7 @@ import { auth } from "@/auth";
 import { findBlockedContent } from "@/lib/content-moderation";
 import { detectMergeTarget } from "@/lib/idea-dedup";
 import { buildMeaningfulTitle } from "@/lib/title";
+import { computeIdeaSearchScore, createTrigrams, normalizeSearchText, tokenizeSearchTerms } from "@/lib/fuzzy-search";
 
 const createIdeaSchema = z.object({
   raw_input_text: z.string().min(20).max(3000),
@@ -71,14 +72,21 @@ async function applyMergeSupportVote(ideaId: string, userId: string | null, anon
 export async function GET(request: NextRequest) {
   const sortParam = request.nextUrl.searchParams.get("sort");
   const sort = sortParam === "new" ? "new" : "hot";
+  const rawQuery = request.nextUrl.searchParams.get("q") || "";
+  const query = rawQuery.trim().slice(0, 120);
+  const queryTokens = tokenizeSearchTerms(query);
+  const normalizedQuery = normalizeSearchText(query);
   const rawLimit = Number(request.nextUrl.searchParams.get("limit") || 20);
   const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 20;
   const cursor = request.nextUrl.searchParams.get("cursor");
   const cursorDate = cursor ? new Date(cursor) : null;
 
+  const where = cursorDate && !Number.isNaN(cursorDate.getTime()) ? { createdAt: { lt: cursorDate } } : undefined;
+  const isSearching = Boolean(normalizedQuery) && queryTokens.length > 0;
+
   const ideas = await prisma.idea.findMany({
-    take: limit + 1,
-    where: cursorDate && !Number.isNaN(cursorDate.getTime()) ? { createdAt: { lt: cursorDate } } : undefined,
+    take: isSearching ? Math.max(limit * 10, 250) : limit + 1,
+    where,
     include: {
       createdByUser: {
         select: { name: true, developerProfile: { select: { displayName: true } } },
@@ -98,10 +106,7 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  const hasMore = ideas.length > limit;
-  const page = hasMore ? ideas.slice(0, limit) : ideas;
-
-  const mapped = page.map((idea) => {
+  const mapped = ideas.map((idea) => {
     const displayTitle = buildMeaningfulTitle({
       rawInputText: idea.rawInputText,
       title: idea.title,
@@ -135,10 +140,48 @@ export async function GET(request: NextRequest) {
     };
   });
 
+  if (isSearching) {
+    const searchContext = {
+      normalizedQuery,
+      tokens: queryTokens,
+      trigrams: createTrigrams(normalizedQuery),
+    };
+
+    const scored = mapped
+      .map((idea) => ({
+        idea,
+        score: computeIdeaSearchScore(searchContext, {
+          title: idea.title,
+          problemStatement: idea.problemStatement,
+          rawInputText: idea.rawInputText,
+          tags: idea.tags,
+        }),
+      }))
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (sort === "new") return b.idea.createdAt.getTime() - a.idea.createdAt.getTime();
+        return scoreHot(b.idea.upvotesCount, b.idea.createdAt) - scoreHot(a.idea.upvotesCount, a.idea.createdAt);
+      });
+
+    const primaryThreshold = queryTokens.length >= 4 ? 0.3 : 0.36;
+    const fallbackThreshold = 0.24;
+    let filtered = scored.filter((entry) => entry.score >= primaryThreshold);
+
+    if (filtered.length === 0) {
+      filtered = scored.filter((entry) => entry.score >= fallbackThreshold);
+    }
+
+    const items = filtered.slice(0, limit).map((entry) => entry.idea);
+    return NextResponse.json({ items, nextCursor: null });
+  }
+
+  const hasMore = mapped.length > limit;
+  const page = hasMore ? mapped.slice(0, limit) : mapped;
+
   const items =
     sort === "new"
-      ? mapped
-      : [...mapped].sort((a, b) => scoreHot(b.upvotesCount, b.createdAt) - scoreHot(a.upvotesCount, a.createdAt));
+      ? page
+      : [...page].sort((a, b) => scoreHot(b.upvotesCount, b.createdAt) - scoreHot(a.upvotesCount, a.createdAt));
 
   const nextCursor = hasMore ? page[page.length - 1]?.createdAt.toISOString() ?? null : null;
   return NextResponse.json({ items, nextCursor });

@@ -22,13 +22,28 @@ export function HomeList() {
   const [items, setItems] = useState<IdeaCard[]>([]);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [queryInput, setQueryInput] = useState("");
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(queryInput.trim());
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [queryInput]);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
 
-    fetch(`/api/ideas?sort=${sort}`)
+    const params = new URLSearchParams({ sort });
+    if (query) {
+      params.set("q", query);
+    }
+
+    fetch(`/api/ideas?${params.toString()}`)
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) {
@@ -52,7 +67,7 @@ export function HomeList() {
     return () => {
       active = false;
     };
-  }, [sort]);
+  }, [sort, query]);
 
   const empty = useMemo(() => !loading && !error && items.length === 0, [loading, error, items.length]);
 
@@ -67,12 +82,40 @@ export function HomeList() {
             New
           </button>
         </div>
-        <p className="subtle text-sm">{items.length} ideas</p>
+
+        <div className="flex flex-col items-start gap-1">
+          <label className="subtle text-xs font-medium uppercase tracking-[0.12em]" htmlFor="idea-search-input">
+            Search (Fuzzy)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="idea-search-input"
+              type="search"
+              className="min-w-[240px] rounded-full border border-zinc-300 bg-white/90 px-4 py-2 text-sm outline-none focus:border-zinc-500"
+              placeholder="Try approximate terms or typos"
+              value={queryInput}
+              onChange={(event) => setQueryInput(event.target.value)}
+              aria-label="Search ideas"
+            />
+            {queryInput ? (
+              <button type="button" className="btn rounded-full px-3" onClick={() => setQueryInput("")}>
+                Clear
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
+
+      <p className="subtle text-sm">
+        {items.length} ideas
+        {query ? ` matching "${query}"` : ""}
+      </p>
 
       {loading ? <p className="subtle text-sm">Loading ideas...</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      {empty ? <p className="subtle text-sm">No ideas yet. Be the first to submit one.</p> : null}
+      {empty ? (
+        <p className="subtle text-sm">{query ? `No ideas found for "${query}".` : "No ideas yet. Be the first to submit one."}</p>
+      ) : null}
 
       <div className="grid gap-3">
         {items.map((idea, index) => {
