@@ -93,3 +93,6 @@ Required GitHub repository settings:
 
 - Secret: `OPENAI_API_KEY`
 - Variable: `DEMANDSOLUTION_SITE_URL` (example: `https://jacksuyu-demandsolution-codex.hf.space/`)
+- Secret: `REDDIT_CLIENT_ID`
+- Secret: `REDDIT_CLIENT_SECRET`
+- Variable: `REDDIT_USER_AGENT` (example: `demand-sync-bot/1.0 by u/<your_reddit_username>`)

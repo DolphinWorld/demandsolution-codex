@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USER_AGENT: ${{ vars.REDDIT_USER_AGENT }}
       OPENAI_MODEL: gpt-4o-mini
       SITE_URL: ${{ vars.DEMANDSOLUTION_SITE_URL }}
     steps:
@@ -37,6 +40,18 @@ jobs:
             echo "Missing required repository variable: DEMANDSOLUTION_SITE_URL"
             exit 1
           fi
+          if [ -z "${REDDIT_CLIENT_ID}" ]; then
+            echo "Missing required secret: REDDIT_CLIENT_ID"
+            exit 1
+          fi
+          if [ -z "${REDDIT_CLIENT_SECRET}" ]; then
+            echo "Missing required secret: REDDIT_CLIENT_SECRET"
+            exit 1
+          fi
+          if [ -z "${REDDIT_USER_AGENT}" ]; then
+            echo "Missing required repository variable: REDDIT_USER_AGENT"
+            exit 1
+          fi
 
       - name: Collect Reddit demand signals
         run: |
@@ -45,7 +60,8 @@ jobs:
             --sort new \
             --per-subreddit 50 \
             --search-per-query 15 \
-            --hours 48
+            --hours 48 \
+            --user-agent "${REDDIT_USER_AGENT}"
 
       - name: Resolve latest run directory
         id: run_dir

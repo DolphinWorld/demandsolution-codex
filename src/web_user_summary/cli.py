@@ -60,16 +60,35 @@ def main() -> None:
     client = RedditClient(user_agent=args.user_agent)
     search_queries = parse_csv_terms(args.search_queries)
     all_posts = []
+    fetch_failures = []
     for subreddit in subreddits:
-        posts = client.fetch_subreddit_posts(subreddit=subreddit, sort=args.sort, limit=args.per_subreddit)
+        try:
+            posts = client.fetch_subreddit_posts(subreddit=subreddit, sort=args.sort, limit=args.per_subreddit)
+        except Exception as exc:
+            message = f"Failed listing r/{subreddit}: {exc}"
+            fetch_failures.append(message)
+            print(f"[WARN] {message}")
+            continue
+
         all_posts.extend(posts)
         print(f"Fetched {len(posts):>3} posts from r/{subreddit}")
         for query in search_queries:
-            q_posts = client.fetch_subreddit_search(
-                subreddit=subreddit, query=query, sort=args.sort, limit=args.search_per_query
-            )
-            all_posts.extend(q_posts)
-            print(f"  + search '{query}': {len(q_posts):>3} posts")
+            try:
+                q_posts = client.fetch_subreddit_search(
+                    subreddit=subreddit, query=query, sort=args.sort, limit=args.search_per_query
+                )
+                all_posts.extend(q_posts)
+                print(f"  + search '{query}': {len(q_posts):>3} posts")
+            except Exception as exc:
+                message = f"Failed search r/{subreddit} query='{query}': {exc}"
+                fetch_failures.append(message)
+                print(f"[WARN] {message}")
+
+    if not all_posts:
+        raise RuntimeError(
+            "No Reddit posts were fetched. In GitHub Actions, set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET "
+            "repository secrets, and set REDDIT_USER_AGENT as a repository variable."
+        )
 
     # Deduplicate by post ID
     dedup = {}
@@ -104,6 +123,8 @@ def main() -> None:
     print(f"Total posts: {meta['total_posts']}")
     print(f"Demand candidates: {meta['total_candidates']}")
     print(f"Demand clusters: {meta['total_clusters']}")
+    if fetch_failures:
+        print(f"Warnings: {len(fetch_failures)} fetch calls failed but pipeline continued.")
 
 
 if __name__ == "__main__":
