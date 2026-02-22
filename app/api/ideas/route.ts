@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { generateSpec } from "@/lib/llm";
 import { getAnonId, getClientIp } from "@/lib/identity";
-import { mapIdea, mapTask } from "@/lib/db-mappers";
+import { mapIdea, mapTask, parseJsonArray } from "@/lib/db-mappers";
 import { scoreHot } from "@/lib/hot-score";
 import { auth } from "@/auth";
 import { findBlockedContent } from "@/lib/content-moderation";
@@ -16,10 +16,33 @@ const createIdeaSchema = z.object({
   target_users: z.string().max(300).optional(),
   platform: z.enum(["Web", "Mobile", "Desktop", "Any"]).optional(),
   constraints: z.string().max(500).optional(),
+  source_tag: z.string().max(40).optional(),
   show_name: z.boolean().optional().default(false),
 });
 
 const RATE_LIMIT_PER_HOUR = 20;
+
+function normalizeSourceTag(sourceTag?: string): string | null {
+  const rawTag = sourceTag?.trim();
+  if (!rawTag) return null;
+  return rawTag.replace(/\s+/g, "_").slice(0, 40);
+}
+
+function mergeIdeaTags(primaryTags: string[], extraTags: string[]): string[] {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+
+  for (const rawTag of [...primaryTags, ...extraTags]) {
+    const tag = rawTag.trim();
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(tag);
+  }
+
+  return merged;
+}
 
 async function checkRateLimit(rateKey: string, ipAddress: string): Promise<boolean> {
   const now = new Date();
@@ -210,6 +233,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const sourceTag = normalizeSourceTag(parsed.data.source_tag);
+
   const moderation = findBlockedContent(parsed.data.raw_input_text, parsed.data.target_users, parsed.data.constraints);
   if (moderation.blocked) {
     return NextResponse.json(
@@ -248,6 +273,17 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.idea.findUnique({ where: { id: mergeTarget.targetIdeaId } });
 
     if (existing) {
+      if (sourceTag) {
+        const existingTags = parseJsonArray<string>(existing.tags);
+        const mergedTags = mergeIdeaTags(existingTags, [sourceTag]);
+        if (mergedTags.length !== existingTags.length) {
+          await prisma.idea.update({
+            where: { id: existing.id },
+            data: { tags: JSON.stringify(mergedTags) },
+          });
+        }
+      }
+
       await prisma.ideaMerge.create({
         data: {
           targetIdeaId: existing.id,
@@ -299,6 +335,8 @@ export async function POST(request: NextRequest) {
         profile?.displayName || session?.user?.name || session?.user?.email || "Member";
     }
 
+    const ideaTags = mergeIdeaTags(Array.isArray(spec.tags) ? spec.tags : [], sourceTag ? [sourceTag] : []);
+
     const idea = await prisma.idea.create({
       data: {
         createdByAnonId: anonId || null,
@@ -311,7 +349,7 @@ export async function POST(request: NextRequest) {
         constraints: parsed.data.constraints,
         title: displayTitle,
         problemStatement: spec.problem_statement,
-        tags: JSON.stringify(spec.tags),
+        tags: JSON.stringify(ideaTags),
         features: JSON.stringify(spec.features),
         openQuestions: JSON.stringify(spec.open_questions),
         tasks: {

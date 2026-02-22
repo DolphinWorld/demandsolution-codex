@@ -73,6 +73,29 @@ export function HomeList() {
 
   return (
     <div className="space-y-4">
+      <div className="card p-4 md:p-5">
+        <label className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-600" htmlFor="idea-search-input">
+          Search Ideas
+        </label>
+        <p className="subtle mt-1 text-sm">Fuzzy search supports approximate terms and minor typos.</p>
+        <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center">
+          <input
+            id="idea-search-input"
+            type="search"
+            className="input w-full rounded-full px-5 py-3 text-base"
+            placeholder="Search by problem, keywords, or rough phrasing"
+            value={queryInput}
+            onChange={(event) => setQueryInput(event.target.value)}
+            aria-label="Search ideas"
+          />
+          {queryInput ? (
+            <button type="button" className="btn rounded-full px-4" onClick={() => setQueryInput("")}>
+              Clear
+            </button>
+          ) : null}
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/60 p-1">
           <button onClick={() => setSort("hot")} className={`btn rounded-full px-4 ${sort === "hot" ? "btn-primary" : ""}`}>
@@ -82,34 +105,11 @@ export function HomeList() {
             New
           </button>
         </div>
-
-        <div className="flex flex-col items-start gap-1">
-          <label className="subtle text-xs font-medium uppercase tracking-[0.12em]" htmlFor="idea-search-input">
-            Search (Fuzzy)
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="idea-search-input"
-              type="search"
-              className="min-w-[240px] rounded-full border border-zinc-300 bg-white/90 px-4 py-2 text-sm outline-none focus:border-zinc-500"
-              placeholder="Try approximate terms or typos"
-              value={queryInput}
-              onChange={(event) => setQueryInput(event.target.value)}
-              aria-label="Search ideas"
-            />
-            {queryInput ? (
-              <button type="button" className="btn rounded-full px-3" onClick={() => setQueryInput("")}>
-                Clear
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <p className="subtle text-sm">
+          {items.length} ideas
+          {query ? ` matching "${query}"` : ""}
+        </p>
       </div>
-
-      <p className="subtle text-sm">
-        {items.length} ideas
-        {query ? ` matching "${query}"` : ""}
-      </p>
 
       {loading ? <p className="subtle text-sm">Loading ideas...</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
