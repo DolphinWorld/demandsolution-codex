@@ -44,11 +44,32 @@ def latest_run_dir(base: Path) -> Path:
 def load_accepted_requirements(run_dir: Path) -> List[Dict]:
     curated = run_dir / "llm_requirement_accepted_curated.json"
     raw = run_dir / "llm_requirement_accepted.json"
+    clusters_file = run_dir / "demand_clusters.json"
     if curated.exists():
         return json.loads(curated.read_text(encoding="utf-8")).get("accepted", [])
     if raw.exists():
         return json.loads(raw.read_text(encoding="utf-8")).get("accepted", [])
-    raise FileNotFoundError(f"No accepted requirements JSON found in {run_dir}")
+    if clusters_file.exists():
+        payload = json.loads(clusters_file.read_text(encoding="utf-8"))
+        clusters = payload.get("clusters", [])
+        accepted = []
+        for cluster in clusters[:20]:
+            summary = str(cluster.get("summary_demand", "")).strip()
+            if not summary:
+                continue
+            accepted.append(
+                {
+                    "cluster_id": cluster.get("cluster_id", ""),
+                    "normalized_requirement": summary,
+                    "requirement": summary,
+                    "reason": "Fallback acceptance (heuristic) because LLM review output was unavailable.",
+                    "demand_count": int(cluster.get("demand_count", 1) or 1),
+                    "examples": cluster.get("examples", [])[:3],
+                }
+            )
+        if accepted:
+            return accepted
+    raise FileNotFoundError(f"No accepted requirements JSON or demand_clusters fallback found in {run_dir}")
 
 
 def load_state(path: Path) -> Dict:

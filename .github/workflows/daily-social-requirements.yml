@@ -29,13 +29,12 @@ jobs:
 
       - name: Validate required secrets and vars
         run: |
-          if [ -z "${OPENAI_API_KEY}" ]; then
-            echo "Missing required secret: OPENAI_API_KEY"
-            exit 1
-          fi
           if [ -z "${SITE_URL}" ]; then
             echo "Missing required repository variable: DEMANDSOLUTION_SITE_URL"
             exit 1
+          fi
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "OPENAI_API_KEY is empty. Will continue with heuristic fallback (no LLM review)."
           fi
 
       - name: Collect social demand signals (HN + StackOverflow)
@@ -53,7 +52,12 @@ jobs:
           echo "run_dir=${latest}" >> "${GITHUB_OUTPUT}"
 
       - name: LLM filter clear requirements
+        continue-on-error: true
         run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "Skipping LLM review due to missing OPENAI_API_KEY."
+            exit 0
+          fi
           python -m src.web_user_summary.llm_requirement_filter \
             --provider openai \
             --openai-model "${OPENAI_MODEL}" \

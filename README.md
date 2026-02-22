@@ -91,5 +91,5 @@ This repo includes a daily workflow to collect user requirements from free socia
 
 Required GitHub repository settings:
 
-- Secret: `OPENAI_API_KEY`
+- Secret: `OPENAI_API_KEY` (optional; if invalid/missing, workflow falls back to heuristic acceptance)
 - Variable: `DEMANDSOLUTION_SITE_URL` (example: `https://jacksuyu-demandsolution-codex.hf.space/`)
