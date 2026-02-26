@@ -95,6 +95,41 @@
       "idea_id": "f785b6ee-2c9c-43e1-b32c-355dfb425247",
       "cluster_id": "demand_007",
       "posted_at": "2026-02-25T13:44:16.033779+00:00"
+    },
+    "8e96b5ad83df38b2d14764bd8b58bcafe9999ba08deee630bcb877fece939833": {
+      "idea_id": "54b43853-fd02-44ce-a179-5f720d9fde5e",
+      "cluster_id": "demand_003",
+      "posted_at": "2026-02-26T13:44:07.110312+00:00"
+    },
+    "454cfadc6d86481c881b2165855bea2f83fcd34ad2c0a9fa4bc36dcebc4b8523": {
+      "idea_id": "8a543912-fd7f-4ec4-8a64-d603ca6185a0",
+      "cluster_id": "demand_004",
+      "posted_at": "2026-02-26T13:44:10.297217+00:00"
+    },
+    "437db7b6a43c630d80457f354fe206291dd7575b976b3e6e4750245d8e1d723f": {
+      "idea_id": "c568a7de-6365-499f-8e1a-60dd8d88e9c9",
+      "cluster_id": "demand_005",
+      "posted_at": "2026-02-26T13:44:13.670893+00:00"
+    },
+    "c8bcf59c38f5ac3b8adfa8e0bd18a7fb3416be3865eff60fa86fcacc7fc5863c": {
+      "idea_id": "2ad336a8-ddf7-4f8d-af29-1c2ea58b21d4",
+      "cluster_id": "demand_006",
+      "posted_at": "2026-02-26T13:44:17.073365+00:00"
+    },
+    "74651a122a748702073c1ef02c363d8c6ae65df029527219a54991875fa129c8": {
+      "idea_id": "2ad336a8-ddf7-4f8d-af29-1c2ea58b21d4",
+      "cluster_id": "demand_007",
+      "posted_at": "2026-02-26T13:44:18.009599+00:00"
+    },
+    "3768a97d963d171e2d664b466bbec088905f2640a9c6270935a1abdd5c4703fe": {
+      "idea_id": "f785b6ee-2c9c-43e1-b32c-355dfb425247",
+      "cluster_id": "demand_008",
+      "posted_at": "2026-02-26T13:44:18.639891+00:00"
+    },
+    "5b0089ea45220a4881460ab40e8927c47d2f8e6bbbc0630cb7d8b21f570d2581": {
+      "idea_id": "95792053-c7ad-4f47-be49-61c0a99ac16f",
+      "cluster_id": "demand_009",
+      "posted_at": "2026-02-26T13:44:21.934509+00:00"
     }
   },
   "runs": [
@@ -120,6 +155,12 @@
       "run_dir": "data/social_requirements/20260225_134400_utc",
       "posted_at": "2026-02-25T13:44:16.033832+00:00",
       "results_count": 7,
+      "posted_count": 7
+    },
+    {
+      "run_dir": "data/social_requirements/20260226_134401_utc",
+      "posted_at": "2026-02-26T13:44:21.934529+00:00",
+      "results_count": 9,
       "posted_count": 7
     }
   ]
