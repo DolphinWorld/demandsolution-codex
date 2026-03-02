@@ -210,6 +210,41 @@
       "idea_id": "59b1a153-bb3d-4ece-980a-25be1224a3ea",
       "cluster_id": "demand_005",
       "posted_at": "2026-03-01T13:28:45.422670+00:00"
+    },
+    "e49fcb4585fb2f31e8840046bc64b4d514cf664d46a4d7fee814b000ad763cbf": {
+      "idea_id": "93c41399-0739-488b-b88a-ee8f36d6adbc",
+      "cluster_id": "demand_001",
+      "posted_at": "2026-03-02T13:38:12.811962+00:00"
+    },
+    "89be0c0db5b8222f86eb852f038f6787eca472a91a8587aad91f4edc34369fd0": {
+      "idea_id": "5c9382ad-43a7-43e7-81c6-8ef5413f9e33",
+      "cluster_id": "demand_002",
+      "posted_at": "2026-03-02T13:38:16.609162+00:00"
+    },
+    "0e5a47d2bbf45d2a15bbef7ddb0c23da14ec2b2cdf1f68916062a97453b23d0e": {
+      "idea_id": "72d080f6-6fd0-4c2d-9d51-9b1725975f0b",
+      "cluster_id": "demand_003",
+      "posted_at": "2026-03-02T13:38:19.968377+00:00"
+    },
+    "175a9356ed1c6fb31c2250d0f4187806f06c973387ace8a0aa55f7b2d1d7c56d": {
+      "idea_id": "9acc5a66-c087-4b51-b1a1-f599287502be",
+      "cluster_id": "demand_004",
+      "posted_at": "2026-03-02T13:38:23.309334+00:00"
+    },
+    "20e775ec468a2da49eac3cdd83d219b4f1d1f12cb908c67b229f551d1c153876": {
+      "idea_id": "27ba538b-0fe2-4e28-a981-66f08d98b8bc",
+      "cluster_id": "demand_005",
+      "posted_at": "2026-03-02T13:38:23.899465+00:00"
+    },
+    "6634eee2e166cd554ac61ea14e2df9f89ace810426f9020dfdbd2928531a9973": {
+      "idea_id": "1b3d8a07-b4d6-431b-bd69-6d662bbdf29e",
+      "cluster_id": "demand_006",
+      "posted_at": "2026-03-02T13:38:27.334818+00:00"
+    },
+    "a9d25f35b32903bfb1707854373a69e55728ad190a42c15181a6b7a65d384b11": {
+      "idea_id": "59b1a153-bb3d-4ece-980a-25be1224a3ea",
+      "cluster_id": "demand_007",
+      "posted_at": "2026-03-02T13:38:27.921296+00:00"
     }
   },
   "runs": [
@@ -260,6 +295,12 @@
       "posted_at": "2026-03-01T13:28:45.422713+00:00",
       "results_count": 6,
       "posted_count": 5
+    },
+    {
+      "run_dir": "data/social_requirements/20260302_133810_utc",
+      "posted_at": "2026-03-02T13:38:27.921325+00:00",
+      "results_count": 7,
+      "posted_count": 7
     }
   ]
 }
