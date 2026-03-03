@@ -245,6 +245,41 @@
       "idea_id": "59b1a153-bb3d-4ece-980a-25be1224a3ea",
       "cluster_id": "demand_007",
       "posted_at": "2026-03-02T13:38:27.921296+00:00"
+    },
+    "6f56f46a62c4f3708c68a0b93d77586031abd98d707cf68db50c62bcc6264744": {
+      "idea_id": "fd8421e8-798c-4f64-8098-739b734ec1d0",
+      "cluster_id": "demand_001",
+      "posted_at": "2026-03-03T13:37:15.622579+00:00"
+    },
+    "f9109e164bd8dcb16c59d288ac3de146a039163d7e9812363141564eded6c99b": {
+      "idea_id": "91ef4b24-330f-4dd3-91b2-552eaf00fb68",
+      "cluster_id": "demand_002",
+      "posted_at": "2026-03-03T13:37:19.012224+00:00"
+    },
+    "b43ae8e6f3ab8147bf38d9955103b22a05ad7fd6c0ce1009464a6bc7f866e606": {
+      "idea_id": "5c9382ad-43a7-43e7-81c6-8ef5413f9e33",
+      "cluster_id": "demand_003",
+      "posted_at": "2026-03-03T13:37:19.580928+00:00"
+    },
+    "782c0da71ead5684b6a14ceaadfbbc0be1866f57cca0ca387729eabcd693df4e": {
+      "idea_id": "72d080f6-6fd0-4c2d-9d51-9b1725975f0b",
+      "cluster_id": "demand_004",
+      "posted_at": "2026-03-03T13:37:20.085020+00:00"
+    },
+    "cb3f6ba9cd9aa07264b7ffbd9a2cb26fe8e411637242b8338afe236559ccff89": {
+      "idea_id": "28b63085-3cc5-4126-9362-b834ba83cb1b",
+      "cluster_id": "demand_005",
+      "posted_at": "2026-03-03T13:37:23.610364+00:00"
+    },
+    "fed0ad3a2376a8c9f84e7339d2f969faacbc7428b9c6c77e7d7fec11a106335c": {
+      "idea_id": "9acc5a66-c087-4b51-b1a1-f599287502be",
+      "cluster_id": "demand_006",
+      "posted_at": "2026-03-03T13:37:24.210242+00:00"
+    },
+    "25da04a2541d6b4dfae103d4ed902723aa769216aa659c43afb4e4f7dacc942d": {
+      "idea_id": "1b3d8a07-b4d6-431b-bd69-6d662bbdf29e",
+      "cluster_id": "demand_007",
+      "posted_at": "2026-03-03T13:37:24.712211+00:00"
     }
   },
   "runs": [
@@ -299,6 +334,12 @@
     {
       "run_dir": "data/social_requirements/20260302_133810_utc",
       "posted_at": "2026-03-02T13:38:27.921325+00:00",
+      "results_count": 7,
+      "posted_count": 7
+    },
+    {
+      "run_dir": "data/social_requirements/20260303_133712_utc",
+      "posted_at": "2026-03-03T13:37:24.712236+00:00",
       "results_count": 7,
       "posted_count": 7
     }
