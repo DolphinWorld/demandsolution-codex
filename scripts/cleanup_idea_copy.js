@@ -32,6 +32,10 @@ function cleanProblemStatement(problemStatement, rawInputText) {
   return cleanedProblem;
 }
 
+function cleanIdeaTitle(title) {
+  return stripSocialRequirementPrefix(title);
+}
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL || "";
 
@@ -46,6 +50,7 @@ async function main() {
     const ideas = await prisma.idea.findMany({
       select: {
         id: true,
+        title: true,
         rawInputText: true,
         problemStatement: true,
       },
@@ -54,16 +59,22 @@ async function main() {
     let updates = 0;
 
     for (const idea of ideas) {
+      const title = cleanIdeaTitle(idea.title);
       const rawInputText = stripSocialRequirementPrefix(idea.rawInputText);
       const problemStatement = cleanProblemStatement(idea.problemStatement, rawInputText);
 
-      if (rawInputText === idea.rawInputText && problemStatement === idea.problemStatement) {
+      if (
+        title === idea.title &&
+        rawInputText === idea.rawInputText &&
+        problemStatement === idea.problemStatement
+      ) {
         continue;
       }
 
       await prisma.idea.update({
         where: { id: idea.id },
         data: {
+          title,
           rawInputText,
           problemStatement,
         },

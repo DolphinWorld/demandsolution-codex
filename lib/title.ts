@@ -1,4 +1,4 @@
-import { stripSocialRequirementPrefix } from "@/lib/idea-copy";
+import { cleanIdeaTitle, stripSocialRequirementPrefix } from "@/lib/idea-copy";
 
 const BAD_ENDINGS = new Set(["and", "or", "but", "to", "for", "with", "of", "a", "an", "the"]);
 
@@ -62,7 +62,7 @@ export function buildMeaningfulTitle(params: {
   title: string;
   problemStatement?: string | null;
 }): string {
-  const candidate = collapseWhitespace(params.title || "");
+  const candidate = collapseWhitespace(cleanIdeaTitle(params.title || ""));
   if (!candidate || isWeakTitle(candidate)) {
     return deriveTitleFromInput(params.rawInputText);
   }

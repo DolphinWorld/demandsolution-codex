@@ -1,5 +1,5 @@
 import type { Idea, Task, TaskLink } from "@prisma/client";
-import { normalizeIdeaCopy } from "@/lib/idea-copy";
+import { cleanIdeaTitle, normalizeIdeaCopy } from "@/lib/idea-copy";
 
 export function parseJsonArray<T>(value: string, fallback: T[] = []): T[] {
   try {
@@ -17,6 +17,7 @@ export function mapIdea(idea: Idea) {
 
   return {
     ...idea,
+    title: cleanIdeaTitle(idea.title),
     rawInputText: normalizedCopy.rawInputText,
     problemStatement: normalizedCopy.problemStatement,
     tags: parseJsonArray<string>(idea.tags),

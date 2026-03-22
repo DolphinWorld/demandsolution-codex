@@ -37,6 +37,10 @@ export function cleanProblemStatement(
   return cleanedProblem;
 }
 
+export function cleanIdeaTitle(title: string | null | undefined): string {
+  return stripSocialRequirementPrefix(title);
+}
+
 export function normalizeIdeaCopy(input: {
   rawInputText: string | null | undefined;
   problemStatement: string | null | undefined;
