@@ -302,6 +302,12 @@ export async function POST(request: NextRequest) {
 
       await applyMergeSupportVote(existing.id, userId, anonId || null);
 
+      const existingTitle = buildMeaningfulTitle({
+        rawInputText: existing.rawInputText,
+        title: existing.title,
+        problemStatement: existing.problemStatement,
+      });
+
       return NextResponse.json(
         {
           merged: true,
@@ -312,7 +318,7 @@ export async function POST(request: NextRequest) {
               : "Your submission matches an existing idea and has been merged into that thread.",
           idea: {
             id: existing.id,
-            title: existing.title,
+            title: existingTitle,
           },
         },
         { status: 200 }

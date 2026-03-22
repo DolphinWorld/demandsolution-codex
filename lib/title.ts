@@ -1,60 +1,66 @@
-import { cleanIdeaTitle, stripSocialRequirementPrefix } from "@/lib/idea-copy";
+import { cleanIdeaTitle, cleanProblemStatement, stripSocialRequirementPrefix } from "@/lib/idea-copy";
 
-const BAD_ENDINGS = new Set(["and", "or", "but", "to", "for", "with", "of", "a", "an", "the"]);
+const MAX_TITLE_LENGTH = 80;
 
 function collapseWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function isWeakTitle(title: string): boolean {
-  const cleaned = collapseWhitespace(title).replace(/^['\"`]+|['\"`]+$/g, "");
-  if (cleaned.length < 12 || cleaned.length > 110) return true;
-
-  const words = cleaned.split(" ").filter(Boolean);
-  if (words.length < 3) return true;
-
-  const last = words[words.length - 1]?.toLowerCase() || "";
-  if (BAD_ENDINGS.has(last)) return true;
-
-  const alphaWords = words.filter((word) => /[a-z]/i.test(word));
-  if (alphaWords.length < 3) return true;
-
-  return false;
-}
-
-function titleCase(phrase: string): string {
-  const stop = new Set(["a", "an", "the", "and", "or", "for", "to", "of", "in", "on", "with"]);
-  const words = phrase.split(" ").filter(Boolean);
-
-  return words
-    .map((word, index) => {
-      const lower = word.toLowerCase();
-      if (index > 0 && stop.has(lower)) return lower;
-      return lower.charAt(0).toUpperCase() + lower.slice(1);
-    })
-    .join(" ");
-}
-
-function deriveTitleFromInput(rawInputText: string): string {
-  let text = collapseWhitespace(stripSocialRequirementPrefix(rawInputText));
-  text = text
+function trimLeadIn(value: string): string {
+  return value
     .replace(/^i\s+(want|need|would\s+like|wish|hope)\s+(to\s+)?/i, "")
     .replace(/^please\s+/i, "")
     .replace(/^can\s+you\s+/i, "");
+}
 
-  const firstClause = text.split(/[.!?;:\n]/)[0] || text;
-  const words = collapseWhitespace(firstClause).split(" ").filter(Boolean);
-
-  const trimmedWords = words.slice(0, 12);
-  while (trimmedWords.length && BAD_ENDINGS.has(trimmedWords[trimmedWords.length - 1].toLowerCase())) {
-    trimmedWords.pop();
+function truncateSummary(value: string, maxLength = MAX_TITLE_LENGTH): string {
+  const text = collapseWhitespace(value);
+  if (text.length <= maxLength) {
+    return text;
   }
 
-  const fallback = trimmedWords.join(" ").trim();
-  if (!fallback) return "New Product Idea";
+  let clipped = text.slice(0, maxLength);
+  const lastSpace = clipped.lastIndexOf(" ");
 
-  const withPrefix = /^build\b|^create\b|^make\b/i.test(fallback) ? fallback : `Build ${fallback}`;
-  return titleCase(withPrefix);
+  if (lastSpace >= Math.floor(maxLength / 2)) {
+    clipped = clipped.slice(0, lastSpace);
+  }
+
+  return clipped.replace(/[,:;.!?\-–—]+$/g, "").trim();
+}
+
+function deriveTitleFromInput(rawInputText: string, problemStatement?: string | null): string {
+  const source =
+    cleanProblemStatement(problemStatement, rawInputText) ||
+    stripSocialRequirementPrefix(rawInputText);
+
+  let text = collapseWhitespace(source);
+  if (!text) {
+    return "";
+  }
+
+  const contextSplit = text.split(/\bContext:\b/i)[0];
+  if (contextSplit) {
+    text = contextSplit;
+  }
+
+  const sentenceSplit = text.split(/[.!?]\s+/)[0];
+  if (sentenceSplit) {
+    text = sentenceSplit;
+  }
+
+  text = text
+    .split("\n")[0]
+    .trim();
+
+  text = trimLeadIn(text);
+  text = collapseWhitespace(text);
+
+  if (!text) {
+    return "";
+  }
+
+  return truncateSummary(text);
 }
 
 export function buildMeaningfulTitle(params: {
@@ -63,15 +69,6 @@ export function buildMeaningfulTitle(params: {
   problemStatement?: string | null;
 }): string {
   const candidate = collapseWhitespace(cleanIdeaTitle(params.title || ""));
-  if (!candidate || isWeakTitle(candidate)) {
-    return deriveTitleFromInput(params.rawInputText);
-  }
-
-  // If model title is just a direct clipped prefix of raw input, promote a cleaner synthesized title.
-  const normalizedRaw = collapseWhitespace(params.rawInputText).toLowerCase();
-  if (normalizedRaw.startsWith(candidate.toLowerCase()) && candidate.length < 26) {
-    return deriveTitleFromInput(params.rawInputText);
-  }
-
-  return candidate;
+  const derived = deriveTitleFromInput(params.rawInputText, params.problemStatement);
+  return derived || candidate || "New Product Idea";
 }

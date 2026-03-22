@@ -3,6 +3,11 @@ const { PrismaClient } = require("@prisma/client");
 const SOCIAL_REQUIREMENT_PREFIX = "User requirement from social community:";
 const GENERIC_PROBLEM_STATEMENT =
   /^Build a\s+.+?\s+product for\s+.+?\s+based on the submitted idea\.$/i;
+const MAX_TITLE_LENGTH = 80;
+
+function collapseWhitespace(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
 
 function stripSocialRequirementPrefix(value) {
   if (!value) return "";
@@ -36,6 +41,66 @@ function cleanIdeaTitle(title) {
   return stripSocialRequirementPrefix(title);
 }
 
+function trimLeadIn(value) {
+  return value
+    .replace(/^i\s+(want|need|would\s+like|wish|hope)\s+(to\s+)?/i, "")
+    .replace(/^please\s+/i, "")
+    .replace(/^can\s+you\s+/i, "");
+}
+
+function truncateSummary(value, maxLength = MAX_TITLE_LENGTH) {
+  const text = collapseWhitespace(value);
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  let clipped = text.slice(0, maxLength);
+  const lastSpace = clipped.lastIndexOf(" ");
+
+  if (lastSpace >= Math.floor(maxLength / 2)) {
+    clipped = clipped.slice(0, lastSpace);
+  }
+
+  return clipped.replace(/[,:;.!?\-–—]+$/g, "").trim();
+}
+
+function deriveTitleFromInput(rawInputText, problemStatement) {
+  const source =
+    cleanProblemStatement(problemStatement, rawInputText) ||
+    stripSocialRequirementPrefix(rawInputText);
+
+  let text = collapseWhitespace(source);
+  if (!text) {
+    return "";
+  }
+
+  const contextSplit = text.split(/\bContext:\b/i)[0];
+  if (contextSplit) {
+    text = contextSplit;
+  }
+
+  const sentenceSplit = text.split(/[.!?]\s+/)[0];
+  if (sentenceSplit) {
+    text = sentenceSplit;
+  }
+
+  text = text.split("\n")[0].trim();
+  text = trimLeadIn(text);
+  text = collapseWhitespace(text);
+
+  if (!text) {
+    return "";
+  }
+
+  return truncateSummary(text);
+}
+
+function buildMeaningfulTitle(title, rawInputText, problemStatement) {
+  const candidate = collapseWhitespace(cleanIdeaTitle(title || ""));
+  const derived = deriveTitleFromInput(rawInputText, problemStatement);
+  return derived || candidate || "New Product Idea";
+}
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL || "";
 
@@ -59,9 +124,9 @@ async function main() {
     let updates = 0;
 
     for (const idea of ideas) {
-      const title = cleanIdeaTitle(idea.title);
       const rawInputText = stripSocialRequirementPrefix(idea.rawInputText);
       const problemStatement = cleanProblemStatement(idea.problemStatement, rawInputText);
+      const title = buildMeaningfulTitle(idea.title, rawInputText, problemStatement);
 
       if (
         title === idea.title &&
