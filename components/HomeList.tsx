@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+const PAGE_SIZE = 20;
+
 type IdeaCard = {
   id: string;
   title: string;
@@ -16,15 +18,47 @@ type IdeaCard = {
   working_developers?: string[];
 };
 
+function buildPageItems(currentPage: number, totalPages: number): Array<number | string> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const items: Array<number | string> = [1];
+  const windowStart = Math.max(2, currentPage - 1);
+  const windowEnd = Math.min(totalPages - 1, currentPage + 1);
+
+  if (windowStart > 2) {
+    items.push("left-ellipsis");
+  }
+
+  for (let page = windowStart; page <= windowEnd; page += 1) {
+    items.push(page);
+  }
+
+  if (windowEnd < totalPages - 1) {
+    items.push("right-ellipsis");
+  }
+
+  items.push(totalPages);
+  return items;
+}
+
 export function HomeList() {
   const [sort, setSort] = useState<"hot" | "new">("hot");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<IdeaCard[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
+
+  function changePage(nextPage: number) {
+    setPage(nextPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -35,11 +69,17 @@ export function HomeList() {
   }, [queryInput]);
 
   useEffect(() => {
+    setPage(1);
+  }, [sort, query]);
+
+  useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
 
     const params = new URLSearchParams({ sort });
+    params.set("page", String(page));
+    params.set("limit", String(PAGE_SIZE));
     if (query) {
       params.set("q", query);
     }
@@ -57,12 +97,17 @@ export function HomeList() {
           const nextItems = data.items || [];
           setItems(nextItems);
           setTotalCount(typeof data.totalCount === "number" ? data.totalCount : nextItems.length);
+          setTotalPages(typeof data.totalPages === "number" ? data.totalPages : 0);
+          if (typeof data.currentPage === "number") {
+            setPage(data.currentPage);
+          }
         }
       })
       .catch((err) => {
         if (active) {
           setItems([]);
           setTotalCount(0);
+          setTotalPages(0);
           setError(err instanceof Error ? err.message : "Failed to load ideas");
         }
       })
@@ -73,14 +118,17 @@ export function HomeList() {
     return () => {
       active = false;
     };
-  }, [sort, query]);
+  }, [page, sort, query]);
 
   const empty = useMemo(() => !loading && !error && items.length === 0, [loading, error, items.length]);
   const visibleCount = items.length;
+  const startItem = visibleCount > 0 ? (page - 1) * PAGE_SIZE + 1 : 0;
+  const endItem = visibleCount > 0 ? startItem + visibleCount - 1 : 0;
   const summaryLabel =
-    totalCount !== null && visibleCount < totalCount
-      ? `Showing ${visibleCount} of ${totalCount} ideas`
+    totalCount !== null && visibleCount > 0 && visibleCount < totalCount
+      ? `Showing ${startItem}-${endItem} of ${totalCount} ideas`
       : `${totalCount ?? visibleCount} ideas`;
+  const pageItems = buildPageItems(page, totalPages);
 
   return (
     <div className="space-y-4">
@@ -197,6 +245,50 @@ export function HomeList() {
           );
         })}
       </div>
+
+      {totalPages > 1 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="subtle text-sm">
+            Page {page} of {totalPages}
+          </p>
+          <nav className="flex flex-wrap items-center gap-2" aria-label="Ideas pagination">
+            <button
+              type="button"
+              className="btn rounded-full px-4"
+              onClick={() => changePage(page - 1)}
+              disabled={page <= 1 || loading}
+            >
+              Previous
+            </button>
+            {pageItems.map((item) =>
+              typeof item === "number" ? (
+                <button
+                  key={item}
+                  type="button"
+                  className={`btn min-w-10 rounded-full px-4 ${item === page ? "btn-primary" : ""}`}
+                  onClick={() => changePage(item)}
+                  aria-current={item === page ? "page" : undefined}
+                  disabled={loading}
+                >
+                  {item}
+                </button>
+              ) : (
+                <span key={item} className="subtle px-1 text-sm" aria-hidden="true">
+                  ...
+                </span>
+              )
+            )}
+            <button
+              type="button"
+              className="btn rounded-full px-4"
+              onClick={() => changePage(page + 1)}
+              disabled={page >= totalPages || loading}
+            >
+              Next
+            </button>
+          </nav>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -102,16 +102,11 @@ export async function GET(request: NextRequest) {
   const normalizedQuery = normalizeSearchText(query);
   const rawLimit = Number(request.nextUrl.searchParams.get("limit") || 20);
   const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 20;
-  const cursor = request.nextUrl.searchParams.get("cursor");
-  const cursorDate = cursor ? new Date(cursor) : null;
-
-  const where = cursorDate && !Number.isNaN(cursorDate.getTime()) ? { createdAt: { lt: cursorDate } } : undefined;
+  const rawPage = Number(request.nextUrl.searchParams.get("page") || 1);
+  const requestedPage = Number.isFinite(rawPage) ? Math.max(Math.floor(rawPage), 1) : 1;
   const isSearching = Boolean(normalizedQuery) && queryTokens.length > 0;
-  const totalIdeasPromise = isSearching ? Promise.resolve(null) : prisma.idea.count();
 
   const ideas = await prisma.idea.findMany({
-    take: isSearching ? Math.max(limit * 10, 250) : limit + 1,
-    where,
     include: {
       createdByUser: {
         select: { name: true, developerProfile: { select: { displayName: true } } },
@@ -196,22 +191,43 @@ export async function GET(request: NextRequest) {
       filtered = scored.filter((entry) => entry.score >= fallbackThreshold);
     }
 
-    const items = filtered.slice(0, limit).map((entry) => entry.idea);
-    return NextResponse.json({ items, nextCursor: null, totalCount: filtered.length });
+    const totalCount = filtered.length;
+    const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+    const currentPage = totalPages === 0 ? 1 : Math.min(requestedPage, totalPages);
+    const offset = (currentPage - 1) * limit;
+    const items = filtered.slice(offset, offset + limit).map((entry) => entry.idea);
+
+    return NextResponse.json({
+      items,
+      nextCursor: null,
+      totalCount,
+      currentPage,
+      totalPages,
+      hasNextPage: currentPage < totalPages,
+      hasPreviousPage: currentPage > 1,
+    });
   }
 
-  const totalCount = (await totalIdeasPromise) ?? mapped.length;
-
-  const hasMore = mapped.length > limit;
-  const page = hasMore ? mapped.slice(0, limit) : mapped;
-
-  const items =
+  const ranked =
     sort === "new"
-      ? page
-      : [...page].sort((a, b) => scoreHot(b.upvotesCount, b.createdAt) - scoreHot(a.upvotesCount, a.createdAt));
+      ? mapped
+      : [...mapped].sort((a, b) => scoreHot(b.upvotesCount, b.createdAt) - scoreHot(a.upvotesCount, a.createdAt));
 
-  const nextCursor = hasMore ? page[page.length - 1]?.createdAt.toISOString() ?? null : null;
-  return NextResponse.json({ items, nextCursor, totalCount });
+  const totalCount = ranked.length;
+  const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+  const currentPage = totalPages === 0 ? 1 : Math.min(requestedPage, totalPages);
+  const offset = (currentPage - 1) * limit;
+  const items = ranked.slice(offset, offset + limit);
+
+  return NextResponse.json({
+    items,
+    nextCursor: null,
+    totalCount,
+    currentPage,
+    totalPages,
+    hasNextPage: currentPage < totalPages,
+    hasPreviousPage: currentPage > 1,
+  });
 }
 
 export async function POST(request: NextRequest) {
