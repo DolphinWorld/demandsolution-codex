@@ -105,7 +105,7 @@ def build_raw_input_text(item: Dict) -> str:
         source_title = str(examples[0].get("title", "")).strip()
 
     lines = [
-        f"User requirement from social community: {requirement}",
+        requirement,
         "",
         "Context:",
         f"- Source: Social (Hacker News / StackExchange)",
