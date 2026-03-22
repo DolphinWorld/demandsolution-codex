@@ -20,6 +20,7 @@ export function HomeList() {
   const [sort, setSort] = useState<"hot" | "new">("hot");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<IdeaCard[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [queryInput, setQueryInput] = useState("");
@@ -52,11 +53,16 @@ export function HomeList() {
         return data;
       })
       .then((data) => {
-        if (active) setItems(data.items || []);
+        if (active) {
+          const nextItems = data.items || [];
+          setItems(nextItems);
+          setTotalCount(typeof data.totalCount === "number" ? data.totalCount : nextItems.length);
+        }
       })
       .catch((err) => {
         if (active) {
           setItems([]);
+          setTotalCount(0);
           setError(err instanceof Error ? err.message : "Failed to load ideas");
         }
       })
@@ -70,6 +76,11 @@ export function HomeList() {
   }, [sort, query]);
 
   const empty = useMemo(() => !loading && !error && items.length === 0, [loading, error, items.length]);
+  const visibleCount = items.length;
+  const summaryLabel =
+    totalCount !== null && visibleCount < totalCount
+      ? `Showing ${visibleCount} of ${totalCount} ideas`
+      : `${totalCount ?? visibleCount} ideas`;
 
   return (
     <div className="space-y-4">
@@ -106,7 +117,7 @@ export function HomeList() {
           </button>
         </div>
         <p className="subtle text-sm">
-          {items.length} ideas
+          {summaryLabel}
           {query ? ` matching "${query}"` : ""}
         </p>
       </div>

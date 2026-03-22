@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
 
   const where = cursorDate && !Number.isNaN(cursorDate.getTime()) ? { createdAt: { lt: cursorDate } } : undefined;
   const isSearching = Boolean(normalizedQuery) && queryTokens.length > 0;
+  const totalIdeasPromise = isSearching ? Promise.resolve(null) : prisma.idea.count();
 
   const ideas = await prisma.idea.findMany({
     take: isSearching ? Math.max(limit * 10, 250) : limit + 1,
@@ -196,8 +197,10 @@ export async function GET(request: NextRequest) {
     }
 
     const items = filtered.slice(0, limit).map((entry) => entry.idea);
-    return NextResponse.json({ items, nextCursor: null });
+    return NextResponse.json({ items, nextCursor: null, totalCount: filtered.length });
   }
+
+  const totalCount = (await totalIdeasPromise) ?? mapped.length;
 
   const hasMore = mapped.length > limit;
   const page = hasMore ? mapped.slice(0, limit) : mapped;
@@ -208,7 +211,7 @@ export async function GET(request: NextRequest) {
       : [...page].sort((a, b) => scoreHot(b.upvotesCount, b.createdAt) - scoreHot(a.upvotesCount, a.createdAt));
 
   const nextCursor = hasMore ? page[page.length - 1]?.createdAt.toISOString() ?? null : null;
-  return NextResponse.json({ items, nextCursor });
+  return NextResponse.json({ items, nextCursor, totalCount });
 }
 
 export async function POST(request: NextRequest) {
