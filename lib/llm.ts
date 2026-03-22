@@ -3,14 +3,18 @@ import { generatedSpecSchema, type GeneratedSpec } from "@/lib/spec-schema";
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
-function fallbackSpec(rawInputText: string, platform?: string | null, targetUsers?: string | null): GeneratedSpec {
+function fallbackSpec(
+  rawInputText: string,
+  _platform?: string | null,
+  _targetUsers?: string | null,
+): GeneratedSpec {
   const title = rawInputText.slice(0, 80) || "Community Idea";
-  const audience = targetUsers?.trim() || "general users";
-  const targetPlatform = platform?.trim() || "web";
+  const problemStatement =
+    rawInputText.trim() || "Turn the submitted idea into a practical, low-friction software product.";
 
   return {
     title,
-    problem_statement: `Build a ${targetPlatform} product for ${audience} based on the submitted idea.`,
+    problem_statement: problemStatement,
     tags: ["community", "spec"],
     features: [
       "Idea submission form with optional context fields",

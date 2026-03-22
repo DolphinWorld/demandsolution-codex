@@ -200,8 +200,8 @@ def main() -> None:
 
         payload = {
             "raw_input_text": build_raw_input_text(item),
-            "target_users": "People asking for practical productivity and workflow software tools",
-            "platform": "Any",
+            "target_users": "People who need practical productivity and workflow tools",
+            "platform": "Web",
             "constraints": "Prefer simple setup and low friction.",
             "source_tag": "_social_",
             "show_name": False,
