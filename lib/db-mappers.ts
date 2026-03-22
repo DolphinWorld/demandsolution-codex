@@ -1,4 +1,5 @@
 import type { Idea, Task, TaskLink } from "@prisma/client";
+import { normalizeIdeaCopy } from "@/lib/idea-copy";
 
 export function parseJsonArray<T>(value: string, fallback: T[] = []): T[] {
   try {
@@ -9,8 +10,15 @@ export function parseJsonArray<T>(value: string, fallback: T[] = []): T[] {
 }
 
 export function mapIdea(idea: Idea) {
+  const normalizedCopy = normalizeIdeaCopy({
+    rawInputText: idea.rawInputText,
+    problemStatement: idea.problemStatement,
+  });
+
   return {
     ...idea,
+    rawInputText: normalizedCopy.rawInputText,
+    problemStatement: normalizedCopy.problemStatement,
     tags: parseJsonArray<string>(idea.tags),
     features: parseJsonArray<string>(idea.features),
     open_questions: parseJsonArray<string>(idea.openQuestions),

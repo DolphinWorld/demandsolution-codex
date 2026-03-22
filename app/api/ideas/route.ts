@@ -8,6 +8,7 @@ import { scoreHot } from "@/lib/hot-score";
 import { auth } from "@/auth";
 import { findBlockedContent } from "@/lib/content-moderation";
 import { detectMergeTarget } from "@/lib/idea-dedup";
+import { cleanProblemStatement, stripSocialRequirementPrefix } from "@/lib/idea-copy";
 import { buildMeaningfulTitle } from "@/lib/title";
 import { computeIdeaSearchScore, createTrigrams, normalizeSearchText, tokenizeSearchTerms } from "@/lib/fuzzy-search";
 
@@ -234,8 +235,9 @@ export async function POST(request: NextRequest) {
   }
 
   const sourceTag = normalizeSourceTag(parsed.data.source_tag);
+  const cleanedRawInputText = stripSocialRequirementPrefix(parsed.data.raw_input_text);
 
-  const moderation = findBlockedContent(parsed.data.raw_input_text, parsed.data.target_users, parsed.data.constraints);
+  const moderation = findBlockedContent(cleanedRawInputText, parsed.data.target_users, parsed.data.constraints);
   if (moderation.blocked) {
     return NextResponse.json(
       {
@@ -246,7 +248,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const dedupInput = [parsed.data.raw_input_text, parsed.data.target_users, parsed.data.platform, parsed.data.constraints]
+  const dedupInput = [cleanedRawInputText, parsed.data.target_users, parsed.data.platform, parsed.data.constraints]
     .filter((value): value is string => Boolean(value))
     .join("\n");
 
@@ -289,7 +291,7 @@ export async function POST(request: NextRequest) {
           targetIdeaId: existing.id,
           mergedByAnonId: anonId || null,
           mergedByUserId: userId,
-          rawInputText: parsed.data.raw_input_text,
+          rawInputText: cleanedRawInputText,
           targetUsers: parsed.data.target_users,
           platform: parsed.data.platform,
           constraints: parsed.data.constraints,
@@ -320,10 +322,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const spec = await generateSpec(parsed.data);
+    const cleanedProblemStatement = cleanProblemStatement(spec.problem_statement, cleanedRawInputText);
     const displayTitle = buildMeaningfulTitle({
-      rawInputText: parsed.data.raw_input_text,
+      rawInputText: cleanedRawInputText,
       title: spec.title,
-      problemStatement: spec.problem_statement,
+      problemStatement: cleanedProblemStatement,
     });
 
     let submitterVisibleName: string | null = null;
@@ -343,12 +346,12 @@ export async function POST(request: NextRequest) {
         createdByUserId: userId,
         isAnonymous,
         submitterVisibleName,
-        rawInputText: parsed.data.raw_input_text,
+        rawInputText: cleanedRawInputText,
         targetUsers: parsed.data.target_users,
         platform: parsed.data.platform,
         constraints: parsed.data.constraints,
         title: displayTitle,
-        problemStatement: spec.problem_statement,
+        problemStatement: cleanedProblemStatement,
         tags: JSON.stringify(ideaTags),
         features: JSON.stringify(spec.features),
         openQuestions: JSON.stringify(spec.open_questions),

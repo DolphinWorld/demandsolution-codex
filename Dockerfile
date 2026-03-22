@@ -26,4 +26,4 @@ RUN npm run prisma:generate && npm run build
 
 EXPOSE 7860
 
-CMD ["sh", "-lc", "if [ -z \"$DATABASE_URL\" ]; then echo 'DATABASE_URL is required (set it in HF secrets, e.g. Supabase Postgres URL)'; exit 1; fi; npx prisma db push --skip-generate && npm start -- -H 0.0.0.0 -p ${PORT}"]
+CMD ["sh", "-lc", "if [ -z \"$DATABASE_URL\" ]; then echo 'DATABASE_URL is required (set it in HF secrets, e.g. Supabase Postgres URL)'; exit 1; fi; npx prisma db push --skip-generate && node scripts/cleanup_idea_copy.js && npm start -- -H 0.0.0.0 -p ${PORT}"]

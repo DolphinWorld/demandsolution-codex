@@ -1,3 +1,5 @@
+import { stripSocialRequirementPrefix } from "@/lib/idea-copy";
+
 const BAD_ENDINGS = new Set(["and", "or", "but", "to", "for", "with", "of", "a", "an", "the"]);
 
 function collapseWhitespace(value: string): string {
@@ -34,7 +36,7 @@ function titleCase(phrase: string): string {
 }
 
 function deriveTitleFromInput(rawInputText: string): string {
-  let text = collapseWhitespace(rawInputText);
+  let text = collapseWhitespace(stripSocialRequirementPrefix(rawInputText));
   text = text
     .replace(/^i\s+(want|need|would\s+like|wish|hope)\s+(to\s+)?/i, "")
     .replace(/^please\s+/i, "")
