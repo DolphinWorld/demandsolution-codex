@@ -2145,6 +2145,46 @@
       "idea_id": "ef6e0163-377d-4dcb-bde0-502999274d27",
       "cluster_id": "demand_005",
       "posted_at": "2026-06-15T15:20:59.084623+00:00"
+    },
+    "5fcf939797fbc600e1e141db5fec0a8ed950c919075811e60398e97a2ae9579e": {
+      "idea_id": "b8ae0586-927e-4153-985a-c61f63faee1f",
+      "cluster_id": "demand_001",
+      "posted_at": "2026-06-16T14:53:57.438748+00:00"
+    },
+    "5016beefae65a71f5f4223b274c66189921c7ca6d657901f0353f9dfe487a24f": {
+      "idea_id": "42fc9c9b-7520-49d1-9b0c-a76088f8a903",
+      "cluster_id": "demand_002",
+      "posted_at": "2026-06-16T14:54:01.088600+00:00"
+    },
+    "028dc93c6782d9b761e11970bbf6eff7e6f521b29206c5f833017bf83d6af877": {
+      "idea_id": "ce930639-8328-4edb-8ca6-7e26ec0907e0",
+      "cluster_id": "demand_003",
+      "posted_at": "2026-06-16T14:54:02.382445+00:00"
+    },
+    "4b723ab2b42ffd3dbfe8f9469f26c9dedbb7d160467fdcf743982abc31acede0": {
+      "idea_id": "78a6a6b7-f760-4573-8a08-d8d1ffba1daa",
+      "cluster_id": "demand_004",
+      "posted_at": "2026-06-16T14:54:03.035129+00:00"
+    },
+    "5395bd7b60a3e08ccec1617a27ee32dae0f4015418d6abafc8223bb52f78d4d9": {
+      "idea_id": "ffbf746b-9e7c-4b0d-86ca-4fe404450dd7",
+      "cluster_id": "demand_005",
+      "posted_at": "2026-06-16T14:54:06.640486+00:00"
+    },
+    "290d5fa3c13c34d30905b34a40e339f3affe69d5dd0fd1a7a27507f8a4a7093f": {
+      "idea_id": "4b8cbdce-2f38-457c-9a16-1fc236b14254",
+      "cluster_id": "demand_006",
+      "posted_at": "2026-06-16T14:54:10.250511+00:00"
+    },
+    "d47d5641f2f8ce53819f5ce70c49356c8ab6c5ed6eaf7f126f99da4e55e21252": {
+      "idea_id": "98a4eaef-69f6-420d-9fde-aed788b95456",
+      "cluster_id": "demand_007",
+      "posted_at": "2026-06-16T14:54:11.156008+00:00"
+    },
+    "b93b7d4c7cc4fb54ac71ef11f80ba159486508a76efdfd344e4353c18db9fd3e": {
+      "idea_id": "d449fa93-f23a-46ee-bb5d-1a789228cd0a",
+      "cluster_id": "demand_008",
+      "posted_at": "2026-06-16T14:54:11.788515+00:00"
     }
   },
   "runs": [
@@ -2783,6 +2823,12 @@
       "posted_at": "2026-06-15T15:20:59.084652+00:00",
       "results_count": 5,
       "posted_count": 5
+    },
+    {
+      "run_dir": "data/social_requirements/20260616_145350_utc",
+      "posted_at": "2026-06-16T14:54:11.788546+00:00",
+      "results_count": 8,
+      "posted_count": 8
     }
   ]
 }
