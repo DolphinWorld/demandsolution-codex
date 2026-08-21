@@ -3030,6 +3030,11 @@
       "idea_id": "cd645a00-c7a3-400d-bc97-68083a218cc3",
       "cluster_id": "demand_003",
       "posted_at": "2026-08-20T13:55:52.555579+00:00"
+    },
+    "9aef9c1327f6118f6f63424071803c6f4d185e41bd4c805013fa3a6a52978461": {
+      "idea_id": "2c37472f-5017-4789-aee5-ac65c33bdd42",
+      "cluster_id": "demand_001",
+      "posted_at": "2026-08-21T13:55:22.262717+00:00"
     }
   },
   "runs": [
@@ -4052,6 +4057,12 @@
       "posted_at": "2026-08-20T13:55:52.555609+00:00",
       "results_count": 3,
       "posted_count": 2
+    },
+    {
+      "run_dir": "data/social_requirements/20260821_135514_utc",
+      "posted_at": "2026-08-21T13:55:22.262749+00:00",
+      "results_count": 1,
+      "posted_count": 1
     }
   ]
 }
