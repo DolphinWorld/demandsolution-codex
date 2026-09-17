@@ -3140,6 +3140,41 @@
       "idea_id": "0ca2d86a-4f21-431f-bad6-e70589268358",
       "cluster_id": "demand_002",
       "posted_at": "2026-09-16T17:36:36.950735+00:00"
+    },
+    "39b067b742f9d2a86345353ab5fd0ec62afd8a467cea76d17380e010beccde4d": {
+      "idea_id": "1ac05e57-1e6f-45a8-9a09-6879497ddd83",
+      "cluster_id": "demand_002",
+      "posted_at": "2026-09-17T17:36:29.973739+00:00"
+    },
+    "b9b5b0e3f51f3a606de40a7166e05440f9eaf7e9fe5423ef93991aa2a7ef0b52": {
+      "idea_id": "0b776907-b6b6-490e-bf6e-790fdb71a999",
+      "cluster_id": "demand_001",
+      "posted_at": "2026-09-17T17:36:31.322295+00:00"
+    },
+    "880db20e9a32f5013653abe8c6562a38dc514cf51c785b4e5e4ade1d757bf4df": {
+      "idea_id": "9137792b-ae59-4f32-8712-b8170907c750",
+      "cluster_id": "demand_003",
+      "posted_at": "2026-09-17T17:36:34.852652+00:00"
+    },
+    "18bf7aefd3b48a46ced2d8167500bb6ac2ee24b6943727afd29c125485825485": {
+      "idea_id": "de3c3709-fc24-407c-85f4-ad3d508390fe",
+      "cluster_id": "demand_004",
+      "posted_at": "2026-09-17T17:36:38.719406+00:00"
+    },
+    "9b5a7e0cef264fb8c477d62c762ab8855d5b714b66df5201da8a47d233e2db4d": {
+      "idea_id": "98601701-e5f7-4641-bdd8-5666867e4004",
+      "cluster_id": "demand_005",
+      "posted_at": "2026-09-17T17:36:39.662793+00:00"
+    },
+    "ea192117595f0ed120d710a73bea54875114864e677e917b7c409928e8c26f6a": {
+      "idea_id": "50d16f0f-c4c1-4def-a9ac-d58884109643",
+      "cluster_id": "demand_006",
+      "posted_at": "2026-09-17T17:36:43.105425+00:00"
+    },
+    "8d6b4f6d7239bdad8b6f59c60a1ce307433fb308bf83f7d902c3106bfa2ff2e8": {
+      "idea_id": "c4abd057-ae96-4201-bd30-315abb67ff72",
+      "cluster_id": "demand_007",
+      "posted_at": "2026-09-17T17:36:46.780583+00:00"
     }
   },
   "runs": [
@@ -4264,6 +4299,12 @@
       "posted_at": "2026-09-16T17:36:36.950765+00:00",
       "results_count": 2,
       "posted_count": 2
+    },
+    {
+      "run_dir": "data/social_requirements/20260917_173623_utc",
+      "posted_at": "2026-09-17T17:36:46.780615+00:00",
+      "results_count": 7,
+      "posted_count": 7
     }
   ]
 }
