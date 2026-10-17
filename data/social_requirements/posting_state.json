@@ -3425,6 +3425,16 @@
       "idea_id": "7737fa9a-3e61-462b-9f13-946b597e27d7",
       "cluster_id": "demand_003",
       "posted_at": "2026-10-16T17:22:34.634496+00:00"
+    },
+    "c1a1018bac76396dc32a9e9f57107a2d4e2a44b797b335a15a6ee05a0cff79de": {
+      "idea_id": "85bf571c-75ef-4a6d-8f4e-20bfab9e4591",
+      "cluster_id": "demand_001",
+      "posted_at": "2026-10-17T16:21:33.343705+00:00"
+    },
+    "0046835747ce37b2348f5d1a61ff02d792066803a1f1ee37376603bd91dff14a": {
+      "idea_id": "be05d3fb-0352-41fb-86f5-306882a7859a",
+      "cluster_id": "demand_002",
+      "posted_at": "2026-10-17T16:21:34.052176+00:00"
     }
   },
   "runs": [
@@ -4699,6 +4709,12 @@
       "posted_at": "2026-10-16T17:22:34.634527+00:00",
       "results_count": 3,
       "posted_count": 3
+    },
+    {
+      "run_dir": "data/social_requirements/20261017_162130_utc",
+      "posted_at": "2026-10-17T16:21:34.052204+00:00",
+      "results_count": 2,
+      "posted_count": 2
     }
   ]
 }
